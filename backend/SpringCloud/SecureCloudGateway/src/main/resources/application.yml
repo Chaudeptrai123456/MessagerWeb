@@ -1,0 +1,47 @@
+server:
+  port: 9999
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update   # hoặc create-drop nếu muốn reset mỗi lần chạy
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/message_db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  sql:
+    init:
+      mode: always
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+            client-name: Google
+
+  main:
+    allow-bean-definition-overriding: true
+app.auth.host: localhost
+app.auth.port: 8081
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+
+
+

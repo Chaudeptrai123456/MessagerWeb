@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>GPT4All Assistant</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        textarea { width: 100%; }
+        #response-box { 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            margin-top: 10px; 
+            white-space: pre-wrap;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ask GPT4All</h1>
+    <form id="ask-form">
+        <textarea name="text" id="question" rows="5" placeholder="Nhập câu hỏi..."></textarea><br>
+        <button type="submit">Gửi</button>
+    </form>
+
+    <div id="response-box"></div>
+
+    <h2>Thêm văn bản vào DB</h2>
+    <form action="/add" method="post">
+        <input type="text" name="id" placeholder="ID văn bản"><br>
+        <textarea name="content" rows="5" cols="50" placeholder="Nội dung cần lưu..."></textarea><br>
+        <button type="submit">Thêm</button>
+    </form>
+
+    <h2>Upload PDF</h2>
+    <form action="/upload_pdf" method="post" enctype="multipart/form-data">
+        <input type="file" name="file"><br>
+        <input type="text" name="id" placeholder="ID tài liệu"><br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <script>
+        document.getElementById("ask-form").addEventListener("submit", async function(e) {
+            e.preventDefault(); // chặn reload trang
+
+            const question = document.getElementById("question").value;
+
+            // Gọi API /generate
+            const formData = new FormData();
+            formData.append("text", question);
+
+            const res = await fetch("/generate", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+            document.getElementById("response-box").innerText = "GPT trả lời:\n\n" + data.response;
+        });
+    </script>
+</body>
+</html>

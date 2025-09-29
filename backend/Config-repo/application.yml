@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: config-server
+
+  profiles:
+    active: native
+
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:./config-repo
+    compatibility-verifier:
+      enabled: true
+    stream:
+      default-binder: rabbit
+    function:
+      definition:
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/message_db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    mongodb:
+      uri: mongodb://chau:123@localhost:27017/product-db?authSource=admin&authMechanism=SCRAM-SHA-256
+
+spring.security.oauth2.resourceserver.jwt.issuer-uri: http://localhost:9999
+
+spring.cloud.stream.defaultBinder: rabbit

@@ -1,0 +1,6 @@
+rootProject.name = 'Messenger'
+//include 'SpringCloud:SecureCloudGateway'
+//findProject(':SpringCloud:SecureCloudGateway')?.name = 'SecureCloudGateway'
+//include 'SpringCloud:ConfigServer'
+//findProject(':SpringCloud:ConfigServer')?.name = 'ConfigServer'
+
