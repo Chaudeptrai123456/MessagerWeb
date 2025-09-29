@@ -1,16 +1,11 @@
 package com.example.Messenger.Utils;
 
 import com.example.Messenger.Entity.User;
-import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import com.example.Messenger.Entity.Authority;
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.*;
+
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -24,36 +19,41 @@ public class JwtTokenUtil {
             Instant now = Instant.now();
             Instant expiry = now.plus(1, ChronoUnit.HOURS);
 
-            // Lấy danh sách authority từ User
+            // Lấy danh sách role từ user
             List<String> roles = user.getAuthorities()
                     .stream()
-                    .map(Authority::getName)   // giả sử class Authority có field name
+                    .map(Authority::getName)
                     .toList();
 
+            // Tạo claims
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                    .subject(user.getEmail()) // subject là email
+                    .subject(user.getEmail())
                     .claim("email", user.getEmail())
                     .claim("username", user.getUsername())
-                    .claim("roles", roles)            // add roles vào JWT
-                    .issuer("http://localhost:8080")  // issuer của em
+                    .claim("roles", roles)
+                    .issuer("http://localhost:9999")
                     .issueTime(Date.from(now))
                     .expirationTime(Date.from(expiry))
                     .build();
 
+            // Tạo header RS256
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
                     .type(JOSEObjectType.JWT)
                     .build();
 
+            // Ký token bằng private key
             SignedJWT signedJWT = new SignedJWT(header, claims);
-
-            // Sign với private key
             JWSSigner signer = new RSASSASigner(privateKey);
             signedJWT.sign(signer);
 
-            return signedJWT.serialize();
+            String token = signedJWT.serialize();
+            System.out.println("✅ Token đã được ký bằng RS256: " + token);
+            return token;
 
         } catch (Exception e) {
+            System.err.println("❌ Lỗi khi tạo JWT: " + e.getMessage());
             throw new RuntimeException("Không thể tạo JWT", e);
         }
     }
+
 }

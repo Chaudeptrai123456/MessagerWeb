@@ -51,10 +51,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
         }
-
         if (token != null) {
             try {
                 Jwt jwt = jwtDecoder.decode(token);
+                System.out.println("test claims  " + jwt.getClaims().toString());
                 String username = jwt.getClaimAsString("username");
                 List<String> roles = jwt.getClaimAsStringList("roles");
                 if (roles == null) roles = List.of();
@@ -66,6 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(username, null, authorities);
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
             } catch (JwtException e) {
