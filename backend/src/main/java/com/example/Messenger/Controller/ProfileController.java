@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,26 +28,23 @@ public class ProfileController {
     public ResponseEntity<String> askFastApi(@RequestBody Map<String, String> requestBody) {
         RestTemplate restTemplate = new RestTemplate();
 
-        String fastApiUrl = "http://localhost:8000/api/generate";
+        // ✅ Sửa lại URL cho đúng với FastAPI
+        String fastApiUrl = "http://localhost:8000/generate";
 
-        // Lấy text từ body
         String text = requestBody.get("text");
 
-        // Tạo payload gửi sang FastAPI
         Map<String, String> payload = new HashMap<>();
         payload.put("text", text);
 
-        // Tạo headers
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED); // ✅ Vì FastAPI dùng Form(...)
 
-        // Gói request
-        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(payload, headers);
+        // ✅ Chuyển payload thành dạng URL-encoded
+        String body = "text=" + URLEncoder.encode(text, StandardCharsets.UTF_8);
+        HttpEntity<String> requestEntity = new HttpEntity<>(body, headers);
 
-        // Gửi POST request
         ResponseEntity<Map> response = restTemplate.postForEntity(fastApiUrl, requestEntity, Map.class);
 
-        // Lấy "response" từ JSON trả về của FastAPI
         Object answer = response.getBody().get("response");
 
         return ResponseEntity.ok(answer.toString());
