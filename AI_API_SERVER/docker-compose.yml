@@ -8,3 +8,11 @@ services:
       - "8001:8000"
     volumes:
       - ./chroma_data:/chroma/chroma
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.1   # dùng đúng version mới nhất như client
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_data:/qdrant/storage

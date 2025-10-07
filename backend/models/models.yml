@@ -1,0 +1,7 @@
+models:
+  - name: text-embedding-mxbai
+    url: huggingface://mxbai/Embed-Large-v1-GGUF/mxbai-embed-large-v1.Q4_K_M.gguf
+    backend: llama
+    parameters:
+      model: mxbai-embed-large-v1.Q4_K_M.gguf
+      embeddings: true

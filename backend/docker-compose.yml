@@ -1,6 +1,14 @@
-version: '3.8'
-
 services:
+  localai:
+    image: localai/localai:latest
+    container_name: localai
+    ports:
+      - "4891:8080"
+    environment:
+      - MODELS_PATH=/models
+    volumes:
+      - ./models:/models
+    restart: unless-stopped
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -14,7 +22,19 @@ services:
       - message_postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
-
+  qdrant:
+    image: qdrant/qdrant:v1.15.1
+    container_name: qdrant
+    ports:
+      - "6333:6333"   # HTTP API
+      - "6334:6334"   # gRPC API
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HOST: 0.0.0.0
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__LOG_LEVEL: INFO
   redis:
     image: redis:7
     container_name: redis

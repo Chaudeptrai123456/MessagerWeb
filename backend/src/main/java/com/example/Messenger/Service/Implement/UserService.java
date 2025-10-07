@@ -1,4 +1,4 @@
-package com.example.Messenger.Service;
+package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Authority;
 import com.example.Messenger.Entity.User;

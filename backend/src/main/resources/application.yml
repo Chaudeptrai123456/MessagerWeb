@@ -1,7 +1,17 @@
 server:
-  port: 9999  # để Auth Server chạy cổng 8081 (khớp với FastAPI sẽ gọi)
+  port: 9999
 
 spring:
+  ai:
+    vectorstore:
+      qdrant:
+        host: localhost
+        port: 6334
+
+        api-key: ""  # Nếu không bật xác thực thì để trống
+        collection-name: my_vectors
+        use-tls: false
+        initialize-schema: true
   datasource:
     url: jdbc:postgresql://localhost:5432/message_db
     username: user
@@ -10,7 +20,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update   # hoặc create-drop nếu muốn reset mỗi lần chạy
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
