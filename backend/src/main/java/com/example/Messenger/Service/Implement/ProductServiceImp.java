@@ -1,9 +1,6 @@
 package com.example.Messenger.Service.Implement;
 
-import com.example.Messenger.Entity.Category;
-import com.example.Messenger.Entity.Feature;
-import com.example.Messenger.Entity.Image;
-import com.example.Messenger.Entity.Product;
+import com.example.Messenger.Entity.*;
 import com.example.Messenger.Record.ImageRequest;
 import com.example.Messenger.Record.ProductRequest;
 import com.example.Messenger.Repository.CategoryRepository;
@@ -11,6 +8,7 @@ import com.example.Messenger.Repository.ImageRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Service.EmbeddingService;
 import com.example.Messenger.Service.ProductService;
+import com.example.Messenger.Service.RedisService;
 import com.example.Messenger.Utils.ProductIdUtil;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -23,15 +21,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImp implements ProductService {
-
+    private static final Duration PRODUCT_TTL = Duration.ofHours(1);
+    private static final Duration PRODUCT_PAGE_TTL = Duration.ofMinutes(5);
     private ProductIdUtil productIdUtil;
+    private final RedisService redisService;
 
     private final ProductRepository productRepository;
     private final EmbeddingService embeddingService;
@@ -39,9 +39,10 @@ public class ProductServiceImp implements ProductService {
     private final ImageRepository imageRepository;
 
     @Autowired
-    public ProductServiceImp(ProductRepository productRepository,
+    public ProductServiceImp(RedisService redisService, ProductRepository productRepository,
                              EmbeddingService embeddingService,
                              CategoryRepository categoryRepository, ImageRepository imageRepository) {
+        this.redisService = redisService;
         this.productRepository = productRepository;
         this.embeddingService = embeddingService;
         this.categoryRepository = categoryRepository;
@@ -96,17 +97,19 @@ public class ProductServiceImp implements ProductService {
         // 5. ✅ Lưu xuống DB trước
         Product saved = productRepository.save(product);
 
-        // 6. 🔄 Tạo embedding sau (nếu lỗi cũng không sao)
-        CompletableFuture.runAsync(() -> {
-            try {
-                float[] vector = embeddingService.generateEmbedding(saved);
-                saved.setEmbedding(Arrays.toString(vector));
-                productRepository.save(saved);
-                System.out.println("✅ Embedding created for product: " + saved.getName());
-            } catch (Exception e) {
-                System.err.println("⚠️ Embedding failed for " + saved.getName() + ": " + e.getMessage());
-            }
-        });
+//        // 6. 🔄 Tạo embedding sau (nếu lỗi cũng không sao)
+//        CompletableFuture.runAsync(() -> {
+//            try {
+//                List<Feature> featureList = features;
+//                ProductEmbedding embedding = new ProductEmbedding(product.getId(), product.getName(),product.getDescription(),category,features);
+//                float[] vector = embeddingService.generateEmbedding(embedding);
+//                saved.setEmbedding(Arrays.toString(vector));
+//                productRepository.save(saved);
+//                System.out.println("✅ Embedding created for product: " + saved.getName());
+//            } catch (Exception e) {
+//                System.err.println("⚠️ Embedding failed for " + saved.getName() + ": " + e.getMessage());
+//            }
+//        });
 
         return saved;
     }
@@ -125,28 +128,25 @@ public class ProductServiceImp implements ProductService {
         // Gộp lại thành ID hoàn chỉnh
         return slug + "_" + datePart + "_" + randomPart;
     }
-
-
     @Override
     public Product updateProduct(String id, Product newProduct, List<MultipartFile> images) throws IOException {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
 
-        existing.setName(newProduct.getName());
-        existing.setDescription(newProduct.getDescription());
-        existing.setPrice(newProduct.getPrice());
-        existing.setEmbedding(newProduct.getEmbedding());
-        existing.setCategory(newProduct.getCategory());
-        existing.setQuantity(newProduct.getQuantity());
+        existing.setName(newProduct.getName() == null ? existing.getName():newProduct.getName());
+        existing.setDescription(newProduct.getDescription() == null ? existing.getDescription(): newProduct.getDescription());
+        existing.setPrice(newProduct.getPrice() == null ? existing.getPrice() : existing.getPrice()+ newProduct.getPrice());
+//        existing.setEmbedding(newProduct.getEmbedding() == null ? existing.ge);
+        existing.setCategory(newProduct.getCategory() == null ? existing.getCategory(): newProduct.getCategory());
+        existing.setQuantity(newProduct.getQuantity() == null ? existing.getQuantity(): existing.getQuantity()+ newProduct.getQuantity());
         // reset features
-        existing.getFeatures().clear();
+//        existing.getFeatures().clear();
         if (newProduct.getFeatures() != null) {
             for (Feature f : newProduct.getFeatures()) {
                 f.setProduct(existing);
                 existing.getFeatures().add(f);
             }
         }
-
         // reset images
         existing.getImages().clear();
         if (images != null && !images.isEmpty()) {
@@ -164,9 +164,35 @@ public class ProductServiceImp implements ProductService {
         return productRepository.save(existing);
     }
     @Override
+    public Page<Product> getAllProducts(int page, int size) {
+        String cacheKey = "product:page:" + page + ":" + size;
+        // Cache hit
+        PageWrapper cachedPage = redisService.get(cacheKey, PageWrapper.class);
+        if (cachedPage != null) {
+            return cachedPage.toPage();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Product> products = productRepository.findAll(pageable);
+
+        // Cache miss -> save to Redis
+        redisService.save(cacheKey, new PageWrapper(products), PRODUCT_PAGE_TTL);
+        return products;
+    }
+
+    @Override
     public Product getProductById(String id) {
-        return productRepository.findById(id)
+        String cacheKey = "product:" + id;
+        Product cached = redisService.get(cacheKey, Product.class);
+        if (cached != null) {
+            return cached;
+        }
+
+        Product product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        redisService.save(cacheKey, product, PRODUCT_TTL);
+        return product;
     }
 
     @Override
@@ -220,9 +246,45 @@ public class ProductServiceImp implements ProductService {
 
         return image;
     }
+
     @Override
-    public Page<Product> getAllProducts(int page, int size) {
+    public Product addImagesToProduct(String productId, List<MultipartFile> files) throws IOException {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        for (MultipartFile file : files) {
+            Image image = new Image();
+            image.setProduct(product);
+            image.setContentType(file.getContentType());
+            image.setFilename(file.getOriginalFilename());
+            image.setData(file.getBytes());
+            product.getImages().add(image);
+            imageRepository.save(image);
+        }
+        return productRepository.save(product);
+    }
+    public Page<Product> searchProducts(
+            String categoryId,
+            Double minPrice,
+            Double maxPrice,
+            String featureName,
+            String featureValue, int page, int size) {
+        String cacheKey = String.format(
+                "search:%s:%s:%s:%s:%s:%d:%d",
+                categoryId, minPrice, maxPrice, featureName, featureValue, page, size
+        );
+
+        PageWrapper<Product> cached = redisService.getList(cacheKey, PageWrapper.class);
+        if (cached != null) {
+            System.out.println("✅ Cache hit for key: " + cacheKey);
+            return cached.toPage();
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return productRepository.findAll(pageable);
+        Page<Product> result = productRepository.searchProducts(
+                categoryId, minPrice, maxPrice, featureName, featureValue, pageable
+        );
+
+        redisService.saveList(cacheKey, new PageWrapper<>(result));
+        return result;
     }
 }

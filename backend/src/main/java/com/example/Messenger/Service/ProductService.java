@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 
+
 public interface ProductService {
     public Image addImageToProduct(String productId, ImageRequest req) ;
     Product createProduct(ProductRequest req) throws IOException;
@@ -20,4 +21,5 @@ public interface ProductService {
     Product getProductById(String id);
     void deleteProduct(String id);
     public Page<Product> getAllProducts(int page, int size) ;
+    public Product addImagesToProduct(String productId, List<MultipartFile> files) throws IOException;
 }

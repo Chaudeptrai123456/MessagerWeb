@@ -2,6 +2,7 @@ package com.example.Messenger.Security;
 
 import com.example.Messenger.Entity.User;
 import com.example.Messenger.Service.Implement.UserService;
+import com.example.Messenger.Service.RedisService;
 import com.example.Messenger.Utils.JwtTokenUtil;
 import com.example.Messenger.Utils.KeyUtil;
 import jakarta.servlet.http.Cookie;
@@ -30,13 +31,12 @@ import java.util.Optional;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
     private final UserService userService;
-
-    public SecurityConfig(UserService userService) {
+    private final RedisService redisService;
+    public SecurityConfig(UserService userService, RedisService redisService) {
         this.userService = userService;
+        this.redisService = redisService;
     }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationFilter jwtAuthenticationFilter,
@@ -44,7 +44,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/api/products/get","/error", "/default-ui.css", "/.well-known/appspecific/com.chrome.devtools.json").permitAll()
+                        .requestMatchers("/api/products/search/**","/", "/login", "/api/products/get","/error", "/default-ui.css", "/.well-known/appspecific/com.chrome.devtools.json").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -52,21 +52,20 @@ public class SecurityConfig {
                             OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
                             String email = oauthUser.getAttribute("email");
                             String name = oauthUser.getAttribute("name");
-
                             User user = userService.handleLogin(email, name);
                             String jwtToken = JwtTokenUtil.generateToken(user, keyPair.getPrivate());
-
+                            String refresherToken = JwtTokenUtil.generateTokenRefresh(user, keyPair.getPrivate());
+                            redisService.saveRefreshToken(jwtToken, refresherToken);
                             Cookie cookie = new Cookie("token", jwtToken);
+                            cookie.setAttribute("refreshToken",refresherToken);
                             cookie.setHttpOnly(true);
                             cookie.setSecure(true);
                             cookie.setPath("/");
                             cookie.setMaxAge((int) Duration.ofHours(1).toSeconds());
                             response.addCookie(cookie);
-
                             String redirectUrl = Optional.ofNullable(
                                     new HttpSessionRequestCache().getRequest(request, response)
                             ).map(SavedRequest::getRedirectUrl).orElse("/auth/test");
-
                             response.sendRedirect(redirectUrl);
                         })
                 )

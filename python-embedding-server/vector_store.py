@@ -40,3 +40,20 @@ def search_similar(query_vector, limit=3):
         limit=limit
     )
     return res
+def list_all_vectors(limit: int = 100):
+    results = client.scroll(
+        collection_name=COLLECTION_NAME,
+        limit=limit,
+        with_payload=True,
+        with_vectors=True
+    )
+    points, next_page = results
+    print(f"Found {len(points)} points:")
+    for p in points:
+        print(f"ID: {p.id}")
+        print(f"Vector length: {len(p.vector)}")
+        print(f"Payload: {p.payload}")
+        print("------")
+    if next_page:
+        print("Next page offset:", next_page)
+    return poin

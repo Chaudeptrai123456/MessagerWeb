@@ -1,14 +1,22 @@
 package com.example.Messenger.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.*;
-
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(
+        name = "feature",
+        indexes = {
+                @Index(name = "idx_feature_name_value", columnList = "name, value")
+        }
+)
 public class Feature {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

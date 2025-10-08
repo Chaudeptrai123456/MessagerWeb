@@ -1,7 +1,11 @@
 package com.example.Messenger.Utils;
 
+import org.springframework.core.io.ClassPathResource;
+
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
@@ -39,5 +43,30 @@ public class KeyUtil {
                 new X509EncodedKeySpec(Base64.getDecoder().decode(publicBytes)));
 
         return new KeyPair(publicKey, privateKey);
+    }
+    public static PrivateKey loadPrivateKey(String path) throws Exception {
+        InputStream inputStream = new ClassPathResource(path).getInputStream();
+        String key = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+
+        byte[] decoded = Base64.getDecoder().decode(key);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePrivate(spec);
+    }
+
+    public static PublicKey loadPublicKey(String path) throws Exception {
+        InputStream inputStream = new ClassPathResource(path).getInputStream();
+        String key = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+
+        byte[] decoded = Base64.getDecoder().decode(key);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePublic(spec);
     }
 }

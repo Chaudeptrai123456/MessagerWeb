@@ -38,8 +38,6 @@ LOCALAI_URL = os.getenv("LOCALAI_URL", "http://localai:8080/v1/embeddings")
 # ==========================
 # all-MiniLM-L6-v2 → 384 dimension
 # qwen2-embedding → 1536 dimension
-VECTOR_SIZE = int(os.getenv("VECTOR_SIZE", 384))
-
 # ==========================
 # LOG LEVEL
 # ==========================

@@ -2,12 +2,26 @@ server:
   port: 9999
 
 spring:
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+  host: ${SPRING_REDIS_HOST:localhost}
+  port: ${SPRING_REDIS_PORT:6379}
+  lettuce:
+    pool:
+      max-active: ${SPRING_REDIS_MAX_SIZE:100}
+      max-idle: ${SPRING_REDIS_MAX_IDLE:30}
+      min-idle: ${SPRING_REDIS_MIN_IDLE:10}
+      max-wait: ${SPRING_REDIS_MAX_WAIT:2000}
+      time-between-eviction-runs: ${SPRING_REDIS_TIME_BETWEEN_EVICTION:30000}
+      min-evictable-idle-time: ${SPRING_REDIS_MIN_EVICTABLE_IDLE_TIME:60000}
+      block-when-exhausted: ${SPRING_REDIS_BLOCK_WHEN_EXHAUSTED:true}
+  timeout: 2000
   ai:
     vectorstore:
       qdrant:
         host: localhost
         port: 6334
-
         api-key: ""  # Nếu không bật xác thực thì để trống
         collection-name: my_vectors
         use-tls: false

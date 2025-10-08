@@ -9,5 +9,6 @@ public record ProductRequest(
         int quantity,
         String categoryId,
         List<String> images,
-        List<String> features
+        List<String> features,
+        List<String> imagesBase64 // mỗi phần tử là chuỗi Base64
 ) {}

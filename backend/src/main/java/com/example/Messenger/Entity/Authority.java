@@ -6,7 +6,7 @@ import java.util.List;
 
 @Entity
 @Table(name="authority")
-public class Authority {
+public class Authority   {
     @Id
     private String id;
     private String name;

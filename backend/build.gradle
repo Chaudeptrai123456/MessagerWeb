@@ -18,6 +18,8 @@ repositories {
 }
 
 dependencies {
+	implementation 'redis.clients:jedis:5.2.0'
+
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 //	implementation 'org.springframework.ai:spring-ai-qdrant-store-spring-boot-starter'
 //	implementation 'org.springframework.ai:spring-ai-qdrant'
@@ -28,7 +30,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 // 🧠 Spring Authorization Server (nếu app đóng vai trò Authorization Server)
 	implementation 'org.springframework.security:spring-security-oauth2-authorization-server:1.1.1'
 

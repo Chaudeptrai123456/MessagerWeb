@@ -1,6 +1,8 @@
 package com.example.Messenger.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +15,17 @@ import java.util.Set;
 
 @Entity
 @Data
+@Table(
+        name = "product",
+        indexes = {
+                @Index(name = "idx_product_price", columnList = "price"),
+                @Index(name = "idx_product_category", columnList = "category_id")
+        }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Product {
     @Id
     private String id;

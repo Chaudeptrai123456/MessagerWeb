@@ -16,8 +16,8 @@ public class EmbeddingConfig {
         return new RestTemplate();
     }
 
-    @Bean
-    public EmbeddingService embeddingService(RestTemplate restTemplate) {
-        return new EmbeddingService(restTemplate);
-    }
+//    @Bean
+//    public EmbeddingService embeddingService(RestTemplate restTemplate) {
+//        return new EmbeddingService(restTemplate);
+//    }
 }
