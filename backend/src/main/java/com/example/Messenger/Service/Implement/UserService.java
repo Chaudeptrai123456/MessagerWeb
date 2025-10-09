@@ -26,9 +26,13 @@ public class UserService {
     public User handleLogin(String email, String username) {
         return userRepository.findUserByEmail(email)
                 .orElseGet(() -> {
-                    Authority roleUser = authorityRepository.findByName("USER")
-                            .orElseThrow(() -> new RuntimeException("ROLE_USER not found in DB"));
-
+                    Authority roleUser = authorityRepository.findByName("ROLE_USER")
+                            .orElseGet(() -> {
+                                Authority newRole = new Authority();
+                                newRole.setId(UUID.randomUUID().toString());
+                                newRole.setName("ROLE_USER");
+                                return authorityRepository.save(newRole);
+                            });
                     User newUser = new User();
                     newUser.setId(UUID.randomUUID().toString());
                     newUser.setEmail(email);

@@ -19,6 +19,7 @@ repositories {
 
 dependencies {
 	implementation 'redis.clients:jedis:5.2.0'
+	implementation 'org.springframework.kafka:spring-kafka'
 
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 //	implementation 'org.springframework.ai:spring-ai-qdrant-store-spring-boot-starter'

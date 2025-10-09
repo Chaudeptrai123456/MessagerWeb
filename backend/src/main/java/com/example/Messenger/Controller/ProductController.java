@@ -1,12 +1,15 @@
 package com.example.Messenger.Controller;
 
+import com.example.Messenger.Entity.Category;
 import com.example.Messenger.Entity.Image;
 import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Record.ImageRequest;
 import com.example.Messenger.Record.ProductRequest;
+import com.example.Messenger.Repository.CategoryRepository;
 import com.example.Messenger.Service.Implement.ProductServiceImp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +25,16 @@ import java.util.Map;
 public class ProductController {
 
     private final ProductServiceImp productService;
+    private final CategoryRepository categoryRepository;
     @Autowired
-    public ProductController(ProductServiceImp productService) {
+    public ProductController(ProductServiceImp productService, CategoryRepository categoryRepository) {
         this.productService = productService;
+        this.categoryRepository = categoryRepository;
+    }
+    @GetMapping("/category")
+    public ResponseEntity<List<Category>> getAllCategory(){
+        var list = categoryRepository.findAll();
+        return new ResponseEntity<List<Category>>(list, HttpStatusCode.valueOf(200));
     }
 
     @PostMapping
