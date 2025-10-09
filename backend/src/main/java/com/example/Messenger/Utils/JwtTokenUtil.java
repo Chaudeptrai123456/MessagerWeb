@@ -7,6 +7,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.*;
 
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
@@ -17,19 +18,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class JwtTokenUtil {
-    private KeyUtil keyUtil;
+
+    // ✅ Sinh Access Token
     public static String generateToken(User user, PrivateKey privateKey) {
         try {
             Instant now = Instant.now();
             Instant expiry = now.plus(1, ChronoUnit.HOURS);
 
-            // Lấy danh sách role từ user
             List<String> roles = user.getAuthorities()
                     .stream()
                     .map(Authority::getName)
                     .toList();
 
-            // Tạo claims
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(user.getEmail())
                     .claim("email", user.getEmail())
@@ -40,37 +40,34 @@ public class JwtTokenUtil {
                     .expirationTime(Date.from(expiry))
                     .build();
 
-            // Tạo header RS256
-            JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
-                    .type(JOSEObjectType.JWT)
-                    .build();
+            SignedJWT signedJWT = new SignedJWT(
+                    new JWSHeader.Builder(JWSAlgorithm.RS256).type(JOSEObjectType.JWT).build(),
+                    claims
+            );
 
-            // Ký token bằng private key
-            SignedJWT signedJWT = new SignedJWT(header, claims);
-            JWSSigner signer = new RSASSASigner(privateKey);
-            signedJWT.sign(signer);
+            signedJWT.sign(new RSASSASigner(privateKey));
 
             String token = signedJWT.serialize();
-            System.out.println("✅ Token đã được ký bằng RS256: " + token);
+            System.out.println("✅ JWT Access Token tạo thành công!");
             return token;
 
         } catch (Exception e) {
-            System.err.println("  Lỗi khi tạo JWT: " + e.getMessage());
-            throw new RuntimeException("Không thể tạo JWT", e);
+            System.err.println("❌ Lỗi khi tạo Access Token: " + e.getMessage());
+            throw new RuntimeException("Không thể tạo JWT access token", e);
         }
     }
+
+    // ✅ Sinh Refresh Token
     public static String generateTokenRefresh(User user, PrivateKey privateKey) {
         try {
             Instant now = Instant.now();
             Instant expiry = now.plus(7, ChronoUnit.DAYS);
 
-            // Lấy danh sách role từ user
             List<String> roles = user.getAuthorities()
                     .stream()
                     .map(Authority::getName)
                     .toList();
 
-            // Tạo claims
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(user.getEmail())
                     .claim("email", user.getEmail())
@@ -81,51 +78,47 @@ public class JwtTokenUtil {
                     .expirationTime(Date.from(expiry))
                     .build();
 
-            // Tạo header RS256
-            JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
-                    .type(JOSEObjectType.JWT)
-                    .build();
+            SignedJWT signedJWT = new SignedJWT(
+                    new JWSHeader.Builder(JWSAlgorithm.RS256).type(JOSEObjectType.JWT).build(),
+                    claims
+            );
 
-            // Ký token bằng private key
-            SignedJWT signedJWT = new SignedJWT(header, claims);
-            JWSSigner signer = new RSASSASigner(privateKey);
-            signedJWT.sign(signer);
+            signedJWT.sign(new RSASSASigner(privateKey));
 
             String token = signedJWT.serialize();
-            System.out.println("✅ Token đã được ký bằng RS256: " + token);
+            System.out.println("🔁 Refresh Token tạo thành công!");
             return token;
 
         } catch (Exception e) {
-            System.err.println("  Lỗi khi tạo JWT: " + e.getMessage());
-            throw new RuntimeException("Không thể tạo JWT", e);
+            System.err.println("❌ Lỗi khi tạo Refresh Token: " + e.getMessage());
+            throw new RuntimeException("Không thể tạo JWT refresh token", e);
         }
     }
+
+    // ✅ Xác thực Refresh Token và sinh Access Token mới
     public static String verifyAndGenerateNewAccessToken(String refreshToken) {
         try {
-            // Đọc public key từ file
-            PublicKey publicKey = KeyUtil.loadPublicKey("keys/public.pem");
+            // 🔐 Lấy key pair (tự tạo nếu chưa có)
+            KeyPair keyPair = KeyUtil.loadOrCreateKeyPair();
+            PublicKey publicKey = keyPair.getPublic();
+            PrivateKey privateKey = keyPair.getPrivate();
 
-            // Đọc private key từ file
-            PrivateKey privateKey = KeyUtil.loadPrivateKey("keys/private.pem");
             SignedJWT signedJWT = SignedJWT.parse(refreshToken);
             JWSVerifier verifier = new RSASSAVerifier((RSAPublicKey) publicKey);
 
             if (!signedJWT.verify(verifier)) {
-                throw new RuntimeException(" Refresh token không hợp lệ");
+                throw new RuntimeException("Refresh token không hợp lệ");
             }
 
-            // Kiểm tra hạn sử dụng
             Date expiration = signedJWT.getJWTClaimsSet().getExpirationTime();
             if (expiration.before(new Date())) {
-                throw new RuntimeException("  Refresh token đã hết hạn");
+                throw new RuntimeException("Refresh token đã hết hạn");
             }
 
-            // Lấy claims từ refresh token
             JWTClaimsSet oldClaims = signedJWT.getJWTClaimsSet();
             Instant now = Instant.now();
-            Instant newExpiry = now.plus(1, ChronoUnit.HOURS); // Access token sống 1 tiếng
+            Instant newExpiry = now.plus(1, ChronoUnit.HOURS);
 
-            // Tạo claims mới cho access token
             JWTClaimsSet newClaims = new JWTClaimsSet.Builder()
                     .subject(oldClaims.getSubject())
                     .claim("email", oldClaims.getStringClaim("email"))
@@ -136,20 +129,19 @@ public class JwtTokenUtil {
                     .expirationTime(Date.from(newExpiry))
                     .build();
 
-            // Tạo header và ký token
-            JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
-                    .type(JOSEObjectType.JWT)
-                    .build();
+            SignedJWT newSignedJWT = new SignedJWT(
+                    new JWSHeader.Builder(JWSAlgorithm.RS256).type(JOSEObjectType.JWT).build(),
+                    newClaims
+            );
 
-            SignedJWT newSignedJWT = new SignedJWT(header, newClaims);
-            JWSSigner signer = new RSASSASigner(privateKey);
-            newSignedJWT.sign(signer);
+            newSignedJWT.sign(new RSASSASigner(privateKey));
 
+            System.out.println("✅ Access Token mới được tạo thành công!");
             return newSignedJWT.serialize();
+
         } catch (Exception e) {
-            System.err.println("  Lỗi khi xác thực refresh token: " + e.getMessage());
+            System.err.println("❌ Lỗi khi xác thực Refresh Token: " + e.getMessage());
             throw new RuntimeException("Không thể tạo access token mới", e);
         }
     }
-
 }

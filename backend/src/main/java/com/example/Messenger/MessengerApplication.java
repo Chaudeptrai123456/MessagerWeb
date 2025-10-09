@@ -16,28 +16,5 @@ public class MessengerApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(MessengerApplication.class, args);
-		try {
-			// Tạo thư mục keys nếu chưa có
-			Path keyDir = Paths.get("keys");
-			if (!Files.exists(keyDir)) {
-				Files.createDirectories(keyDir);
-			}
-
-			// Tạo key pair
-			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-			keyGen.initialize(2048);
-			KeyPair keyPair = keyGen.generateKeyPair();
-
-			// Lưu key vào file
-			String privatePath = "keys/private.key";
-			String publicPath = "keys/public.key";
-			KeyUtil.saveKeyPair(keyPair, privatePath, publicPath);
-
-			System.out.println("✅ Đã tạo và lưu key vào thư mục 'keys'");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
-
-
 }

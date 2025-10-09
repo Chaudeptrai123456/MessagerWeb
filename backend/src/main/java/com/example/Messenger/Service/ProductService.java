@@ -22,4 +22,10 @@ public interface ProductService {
     void deleteProduct(String id);
     public Page<Product> getAllProducts(int page, int size) ;
     public Product addImagesToProduct(String productId, List<MultipartFile> files) throws IOException;
+    public Page<Product> searchProducts(
+            String categoryId,
+            Double minPrice,
+            Double maxPrice,
+            String featureName,
+            String featureValue, int page, int size);
 }

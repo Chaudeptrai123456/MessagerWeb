@@ -262,6 +262,7 @@ public class ProductServiceImp implements ProductService {
         }
         return productRepository.save(product);
     }
+    @Override
     public Page<Product> searchProducts(
             String categoryId,
             Double minPrice,

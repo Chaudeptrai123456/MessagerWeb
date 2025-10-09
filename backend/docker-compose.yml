@@ -1,21 +1,23 @@
 services:
-  localai:
-    image: localai/localai:latest
-    container_name: localai
+  backend:
+    build: .
+    container_name: backend
     restart: unless-stopped
-    ports:
-      - "4891:8080"
-    volumes:
-      - ./models:/models
+    depends_on:
+      - postgres
+      - redis
+      - kafka
     environment:
-      - MODELS_PATH=/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/message_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "9999:9999"
+    networks:
+      - app-network
+
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -29,6 +31,15 @@ services:
       - message_postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
   qdrant:
     image: qdrant/qdrant:v1.15.1
     container_name: qdrant
@@ -42,11 +53,6 @@ services:
       QDRANT__SERVICE__GRPC_PORT: 6334
       QDRANT__SERVICE__HTTP_PORT: 6333
       QDRANT__LOG_LEVEL: INFO
-  redis:
-    image: redis:7
-    container_name: redis
-    ports:
-      - "6379:6379"
     networks:
       - app-network
 

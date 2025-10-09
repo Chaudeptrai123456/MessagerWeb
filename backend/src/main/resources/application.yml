@@ -66,3 +66,27 @@ app:
 logging:
   level:
     org.springframework.security: DEBUG
+
+---
+spring.config.activate.on-profile: docker
+server:
+  port: 9999
+spring:
+  data:
+    redis:
+      host: redis
+      port: 6379
+#spring:
+#  datasource:
+#    url: jdbc:postgresql://postgres:5432/message_db
+#    username: user
+#    password: password
+#    driver-class-name: org.postgresql.Driver
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        format_sql: true
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
