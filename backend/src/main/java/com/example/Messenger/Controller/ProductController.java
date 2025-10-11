@@ -3,6 +3,7 @@ package com.example.Messenger.Controller;
 import com.example.Messenger.Entity.Category;
 import com.example.Messenger.Entity.Image;
 import com.example.Messenger.Entity.Product;
+import com.example.Messenger.Record.DiscountRequest;
 import com.example.Messenger.Record.ImageRequest;
 import com.example.Messenger.Record.ProductRequest;
 import com.example.Messenger.Repository.CategoryRepository;
@@ -107,5 +108,13 @@ public class ProductController {
                 categoryId, minPrice, maxPrice, featureName, featureValue, page, size
         );
         return ResponseEntity.ok(products);
+    }
+    @PostMapping("/{id}/discounts")
+    public ResponseEntity<Product> addDiscountToProduct(
+            @PathVariable("id") String productId,
+            @RequestBody DiscountRequest request
+    ) {
+        Product updated = productService.addDiscountToProduct(productId, request);
+        return ResponseEntity.ok(updated);
     }
 }

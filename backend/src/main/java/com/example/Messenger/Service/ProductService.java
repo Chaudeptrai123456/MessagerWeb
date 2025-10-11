@@ -2,6 +2,7 @@ package com.example.Messenger.Service;
 
 import com.example.Messenger.Entity.Image;
 import com.example.Messenger.Entity.Product;
+import com.example.Messenger.Record.DiscountRequest;
 import com.example.Messenger.Record.ImageRequest;
 import com.example.Messenger.Record.ProductRequest;
 
@@ -15,6 +16,8 @@ import java.util.List;
 
 
 public interface ProductService {
+    Product addDiscountToProduct(String productId, DiscountRequest request);
+
     public Image addImageToProduct(String productId, ImageRequest req) ;
     Product createProduct(ProductRequest req) throws IOException;
     Product updateProduct(String id, Product product, List<MultipartFile> images) throws IOException;

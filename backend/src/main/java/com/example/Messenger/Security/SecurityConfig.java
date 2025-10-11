@@ -48,7 +48,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationFilter jwtAuthenticationFilter,
                                                    KeyPair keyPair) throws Exception {
-
+        HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
+        requestCache.setCreateSessionAllowed(true);
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -64,6 +65,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers("/api/orders").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -71,28 +73,37 @@ public class SecurityConfig {
                             OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
                             String email = oauthUser.getAttribute("email");
                             String name = oauthUser.getAttribute("name");
-
                             User user = userService.handleLogin(email, name);
-
                             String jwtToken = JwtTokenUtil.generateToken(user, keyPair.getPrivate());
                             String refreshToken = JwtTokenUtil.generateTokenRefresh(user, keyPair.getPrivate());
-
                             redisService.saveRefreshToken(jwtToken, refreshToken);
 
                             Cookie cookie = new Cookie("token", jwtToken);
                             cookie.setHttpOnly(true);
-                            cookie.setSecure(true);
+                            cookie.setSecure(false); // ⚠️ Nếu đang test ở localhost thì để false
                             cookie.setPath("/");
                             cookie.setMaxAge((int) Duration.ofHours(1).toSeconds());
+                            cookie.setAttribute("SameSite", "Lax"); // hoặc "None" nếu cần
                             response.addCookie(cookie);
 
                             // Gửi refresh token qua header (cookie không chứa được 2 key)
-                            response.setHeader("X-Refresh-Token", refreshToken);
+                            SavedRequest savedRequest = requestCache.getRequest(request, response);
+                            if (savedRequest != null) {
+                                System.out.println("🔹 Saved redirect: " + savedRequest.getRedirectUrl());
+                            } else {
+                                System.out.println("⚠️ No saved request found!");
+                            }
+                            String redirectUrl;
+                            if (savedRequest != null) {
+                                redirectUrl = savedRequest.getRedirectUrl();
+                                // Xóa saved request để tránh bị redirect lặp
+                                requestCache.removeRequest(request, response);
+                            } else {
+                                redirectUrl = "/auth/test"; // fallback mặc định
+                            }
 
-                            String redirectUrl = Optional.ofNullable(
-                                    new HttpSessionRequestCache().getRequest(request, response)
-                            ).map(SavedRequest::getRedirectUrl).orElse("/auth/test");
 
+                            // Redirect tới URL cũ hoặc fallback
                             response.sendRedirect(redirectUrl);
                         })
                 )

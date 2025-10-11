@@ -1,9 +1,11 @@
 package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.*;
+import com.example.Messenger.Record.DiscountRequest;
 import com.example.Messenger.Record.ImageRequest;
 import com.example.Messenger.Record.ProductRequest;
 import com.example.Messenger.Repository.CategoryRepository;
+import com.example.Messenger.Repository.DiscountRepository;
 import com.example.Messenger.Repository.ImageRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Service.EmbeddingService;
@@ -32,6 +34,7 @@ public class ProductServiceImp implements ProductService {
     private static final Duration PRODUCT_PAGE_TTL = Duration.ofMinutes(5);
     private ProductIdUtil productIdUtil;
     private final RedisService redisService;
+    private final DiscountRepository discountRepository;
 
     private final ProductRepository productRepository;
     private final EmbeddingService embeddingService;
@@ -39,10 +42,11 @@ public class ProductServiceImp implements ProductService {
     private final ImageRepository imageRepository;
 
     @Autowired
-    public ProductServiceImp(RedisService redisService, ProductRepository productRepository,
+    public ProductServiceImp(RedisService redisService, DiscountRepository discountRepository, ProductRepository productRepository,
                              EmbeddingService embeddingService,
                              CategoryRepository categoryRepository, ImageRepository imageRepository) {
         this.redisService = redisService;
+        this.discountRepository = discountRepository;
         this.productRepository = productRepository;
         this.embeddingService = embeddingService;
         this.categoryRepository = categoryRepository;
@@ -214,6 +218,25 @@ public class ProductServiceImp implements ProductService {
 
         // ✅ Xóa chính product
         productRepository.delete(product);
+    }
+
+    @Override
+    public Product addDiscountToProduct(String productId, DiscountRequest request) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm có id: " + productId));
+        if (request.getPercentage() == null || request.getPercentage() <= 0 || request.getPercentage() > 1) {
+            throw new IllegalArgumentException("Phần trăm giảm giá phải nằm trong khoảng (0, 1]");
+        }
+        Discount discount = new Discount(
+                request.getPercentage(),
+                request.getStartDate(),
+                request.getEndDate()
+        );
+        // Gắn discount vô product
+        discount.setProduct(product);
+        product.getDiscounts().add(discount);
+        discountRepository.save(discount); // Lưu discount riêng
+        return productRepository.save(product);
     }
 
     @Override

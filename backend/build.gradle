@@ -18,8 +18,14 @@ repositories {
 }
 
 dependencies {
+	// gmail api
+	implementation 'com.google.api-client:google-api-client:2.2.0'
+	implementation('org.springframework.boot:spring-boot-starter-mail:3.1.5')
+
+	//redis and kafka
 	implementation 'redis.clients:jedis:5.2.0'
 	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 //	implementation 'org.springframework.ai:spring-ai-qdrant-store-spring-boot-starter'

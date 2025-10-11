@@ -21,12 +21,14 @@ import java.util.Set;
 @Service
 @Transactional
 public class OrderServiceImpl implements OrderService {
-
+    private final GmailServiceImp gmailServiceImp;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository) {
+
+    public OrderServiceImpl(GmailServiceImp gmailServiceImp, OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository) {
+        this.gmailServiceImp = gmailServiceImp;
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
@@ -53,6 +55,8 @@ public class OrderServiceImpl implements OrderService {
             if (product.getQuantity() < itemReq.quantity()) {
                 throw new RuntimeException("Not enough stock for product: " + product.getName());
             }
+            product.setQuantity(product.getQuantity()-itemReq.quantity());
+            productRepository.save(product);
         }
 
         // ✅ Bước 2: Tạo order + trừ tồn kho + tính tổng tiền
@@ -75,14 +79,14 @@ public class OrderServiceImpl implements OrderService {
             item.setOrder(order);
 
             // Tính tổng tiền
-            totalAmount += product.getPrice() * itemReq.quantity();
+            totalAmount += product.getCurrentPrice() * itemReq.quantity();
 
             items.add(item);
         }
 
         order.setItems(items);
         order.setTotalAmount(totalAmount); // ✅ Thêm dòng này
-
+        gmailServiceImp.sendEmail("nguyentienanh2001.dev@gmail.com","test",order);
         return orderRepository.save(order);
     }
     @Override

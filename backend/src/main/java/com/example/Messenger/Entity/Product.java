@@ -46,6 +46,9 @@ public class Product {
     private Category category;
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Feature> features = new HashSet<>();
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Discount> discounts = new HashSet<>();
+
     public  Product(){}
     public Product(String id, LocalDate createdAt, String name, String description, Double price, String embedding) {
         this.id = id;
@@ -55,6 +58,43 @@ public class Product {
         this.price = price;
         this.embedding = embedding;
     }
+    public Double getCurrentDiscountPercentage() {
+        LocalDate today = LocalDate.now();
+
+        return discounts.stream()
+                .filter(d -> d.getStartDate() != null && d.getEndDate() != null)
+                .filter(d -> !today.isBefore(d.getStartDate()) && !today.isAfter(d.getEndDate()))
+                .map(Discount::getPercentage)
+                .max(Double::compareTo) // nếu có nhiều giảm giá trùng thời gian → lấy lớn nhất
+                .orElse(0.0);
+    }
+
+    // ✅ Hàm tính giá hiện tại sau khi áp giảm giá
+    public Double getCurrentPrice() {
+        Double discount = getCurrentDiscountPercentage();
+        return price * (1 - discount);
+    }
+
+    // ✅ Tiện ích thêm / xoá discount
+    public void addDiscount(Discount discount) {
+        discounts.add(discount);
+        discount.setProduct(this);
+    }
+
+    public void removeDiscount(Discount discount) {
+        discounts.remove(discount);
+        discount.setProduct(null);
+    }
+
+    // Getters / Setters
+    public Set<Discount> getDiscounts() {
+        return discounts;
+    }
+
+    public void setDiscounts(Set<Discount> discounts) {
+        this.discounts = discounts;
+    }
+
 
     public String getId() {
         return id;
