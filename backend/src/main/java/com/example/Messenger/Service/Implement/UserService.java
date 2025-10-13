@@ -2,6 +2,7 @@ package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Authority;
 import com.example.Messenger.Entity.User;
+import com.example.Messenger.Record.UserProfile;
 import com.example.Messenger.Repository.AuthorityRepository;
 import com.example.Messenger.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class UserService {
         this.authorityRepository = authorityRepository;
     }
 
-    public User handleLogin(String email, String username) {
+    public User handleLogin(String email, String username, String avatar) {
         return userRepository.findUserByEmail(email)
                 .orElseGet(() -> {
                     Authority roleUser = authorityRepository.findByName("ROLE_USER")
@@ -40,9 +41,13 @@ public class UserService {
                     newUser.setPassword(UUID.randomUUID().toString());
                     newUser.setRegistrationDate(LocalDateTime.now());
                     newUser.setAuthorities(List.of(roleUser));
-
+                    newUser.setAvatar(avatar);
                     return userRepository.save(newUser);
                 });
+    }
+    public UserProfile getProfile(String token) {
+        UserProfile userProfile = new UserProfile();
+        return userProfile;
     }
 }
 

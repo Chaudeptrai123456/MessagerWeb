@@ -14,7 +14,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class JwtTokenUtil {
@@ -34,6 +36,7 @@ public class JwtTokenUtil {
                     .subject(user.getEmail())
                     .claim("email", user.getEmail())
                     .claim("username", user.getUsername())
+                    .claim("avatar",user.getAvatar())
                     .claim("roles", roles)
                     .issuer("http://localhost:9999")
                     .issueTime(Date.from(now))
@@ -144,4 +147,42 @@ public class JwtTokenUtil {
             throw new RuntimeException("Không thể tạo access token mới", e);
         }
     }
+    // ✅ Giải mã token để lấy thông tin user
+    public static Map<String, Object> getUserFromToken(String token, PublicKey publicKey) {
+        try {
+            // 1️⃣ Parse token
+            SignedJWT signedJWT = SignedJWT.parse(token);
+
+            // 2️⃣ Verify chữ ký để đảm bảo token hợp lệ
+            JWSVerifier verifier = new RSASSAVerifier((RSAPublicKey) publicKey);
+            if (!signedJWT.verify(verifier)) {
+                throw new RuntimeException("Token không hợp lệ (chữ ký sai)");
+            }
+
+            // 3️⃣ Lấy phần claims (payload)
+            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+
+            // 4️⃣ Kiểm tra hạn sử dụng
+            Date expiration = claims.getExpirationTime();
+            if (expiration.before(new Date())) {
+                throw new RuntimeException("Token đã hết hạn");
+            }
+
+            // 5️⃣ Lấy thông tin user từ claims
+            Map<String, Object> userProfile = new HashMap<>();
+            userProfile.put("email", claims.getStringClaim("email"));
+            userProfile.put("username", claims.getStringClaim("username"));
+            userProfile.put("roles", claims.getClaim("roles"));
+            userProfile.put("issuedAt", claims.getIssueTime());
+            userProfile.put("expiresAt", claims.getExpirationTime());
+
+            System.out.println("👤 Giải mã token thành công! " + userProfile);
+            return userProfile;
+
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi khi đọc token: " + e.getMessage());
+            throw new RuntimeException("Không thể giải mã JWT token", e);
+        }
+    }
+
 }

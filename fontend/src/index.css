@@ -1,0 +1,167 @@
+/* ============================================
+   🌸 RESET CSS + CƠ BẢN TOÀN DỰ ÁN
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: "Inter", "Poppins", sans-serif;
+  background-color: #0d1117;       /* Nền tối sang trọng */
+  color: #e6edf3;                  /* Màu chữ nhẹ cho nền tối */
+  min-height: 100vh;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   🌈 CÁC BIẾN MÀU CHUNG TOÀN DỰ ÁN
+   ============================================ */
+:root {
+  --color-bg: #0d1117;
+  --color-surface: #161b22;
+  --color-accent: #00d1b2;
+  --color-accent-hover: #00b49c;
+  --color-text: #e6edf3;
+  --color-muted: #8b949e;
+  --color-danger: #f85149;
+  --transition: all 0.3s ease;
+}
+
+/* ============================================
+   🧭 CÁC CLASS TÁI SỬ DỤNG
+   ============================================ */
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.btn {
+  background-color: var(--color-accent);
+  border: none;
+  color: #fff;
+  padding: 0.7rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn:hover {
+  background-color: var(--color-accent-hover);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   🖼️ TIÊU ĐỀ, ĐOẠN VĂN
+   ============================================ */
+
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 2.2rem;
+}
+
+h2 {
+  font-size: 1.7rem;
+}
+
+p {
+  font-size: 1rem;
+  color: var(--color-muted);
+  margin-bottom: 1rem;
+}
+
+/* ============================================
+   💡 LINK MẶC ĐỊNH
+   ============================================ */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+/* ============================================
+   ⚡ SCROLLBAR ĐẸP HƠN
+   ============================================ */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1f29;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-hover);
+}
+
+/* ============================================
+   🌙 FOOTER + APP LAYOUT CƠ BẢN
+   ============================================ */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+footer {
+  background-color: var(--color-surface);
+  text-align: center;
+  padding: 1rem 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  border-top: 1px solid #30363d;
+}
+
+/* ============================================
+   🪄 ANIMATION CHUNG
+   ============================================ */
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

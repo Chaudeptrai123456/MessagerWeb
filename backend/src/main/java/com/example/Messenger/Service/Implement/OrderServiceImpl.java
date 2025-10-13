@@ -139,4 +139,8 @@ public class OrderServiceImpl implements OrderService {
         // Gộp lại thành ID hoàn chỉnh
         return randomPart+"_"+orderId + "_" + datePart + "_" + slug;
     }
+    @Override
+    public List<Order> getOrdersByUser(String userId) {
+        return orderRepository.findByUserId(userId);
+    }
 }

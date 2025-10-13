@@ -1,0 +1,39 @@
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  color: black;
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  min-width: 150px;
+  z-index: 100;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+.menu-item:hover .dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.dropdown li {
+  padding: 8px 20px;
+}
+
+.dropdown li a {
+  text-decoration: none;
+  color: #333;
+}
+
+.menu-item:hover .dropdown {
+  display: block;
+}
+.arrow {
+  font-size: 0.8em;
+  margin-left: 5px;
+}

@@ -21,6 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
+import org.springframework.web.cors.CorsConfiguration;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +31,7 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 @Configuration
 @EnableWebSecurity
@@ -51,8 +53,15 @@ public class SecurityConfig {
         HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
         requestCache.setCreateSessionAllowed(true);
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOrigins(List.of("http://localhost:3000"));
+                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(List.of("*"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET,"/api/categories").permitAll()
                         .requestMatchers(
                                 "/",
                                 "/login",
@@ -73,13 +82,14 @@ public class SecurityConfig {
                             OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
                             String email = oauthUser.getAttribute("email");
                             String name = oauthUser.getAttribute("name");
-                            User user = userService.handleLogin(email, name);
+                            String picture = oauthUser.getAttribute("picture");
+                            User user = userService.handleLogin(email, name,picture);
                             String jwtToken = JwtTokenUtil.generateToken(user, keyPair.getPrivate());
                             String refreshToken = JwtTokenUtil.generateTokenRefresh(user, keyPair.getPrivate());
                             redisService.saveRefreshToken(jwtToken, refreshToken);
 
                             Cookie cookie = new Cookie("token", jwtToken);
-                            cookie.setHttpOnly(true);
+                            cookie.setHttpOnly(false);
                             cookie.setSecure(false); // ⚠️ Nếu đang test ở localhost thì để false
                             cookie.setPath("/");
                             cookie.setMaxAge((int) Duration.ofHours(1).toSeconds());
@@ -99,10 +109,8 @@ public class SecurityConfig {
                                 // Xóa saved request để tránh bị redirect lặp
                                 requestCache.removeRequest(request, response);
                             } else {
-                                redirectUrl = "/auth/test"; // fallback mặc định
+                                redirectUrl = "http://localhost:3000"; // fallback mặc định
                             }
-
-
                             // Redirect tới URL cũ hoặc fallback
                             response.sendRedirect(redirectUrl);
                         })

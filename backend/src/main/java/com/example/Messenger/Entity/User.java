@@ -2,7 +2,9 @@ package com.example.Messenger.Entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Table(name = "users")
 @Entity
@@ -14,11 +16,9 @@ public class User {
     private String password;
     @Column(unique = true,nullable = false)
     private String email;
-
+    private String avatar;
     @Column(name = "registration_date")
     private LocalDateTime registrationDate;
-
-
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_authorities",
@@ -26,7 +26,8 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "authorityid")
     )
     private List<Authority> authorities;
-
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Order> orders = new HashSet<>();
     public String getId() {
         return id;
     }
@@ -73,5 +74,13 @@ public class User {
 
     public void setAuthorities(List<Authority> authorities) {
         this.authorities = authorities;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 }

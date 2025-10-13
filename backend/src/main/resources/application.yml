@@ -1,5 +1,10 @@
 server:
   port: 9999
+cloudinary:
+  cloud-name: tienanh
+  api-key: 623447517299521
+  api-secret: hgJyenM0TTgYfag5APqLKUO7Uy4
+
 google:
   client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
   client-secret: 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

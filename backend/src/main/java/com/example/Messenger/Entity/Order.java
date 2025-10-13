@@ -22,7 +22,9 @@ public class Order {
     private String status; // PENDING, PAID, CANCELLED, SHIPPED, DONE
 
     private Double totalAmount;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> items = new HashSet<>();
 

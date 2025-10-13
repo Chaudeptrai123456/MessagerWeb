@@ -21,6 +21,7 @@ dependencies {
 	// gmail api
 	implementation 'com.google.api-client:google-api-client:2.2.0'
 	implementation('org.springframework.boot:spring-boot-starter-mail:3.1.5')
+	implementation 'com.cloudinary:cloudinary-http44:1.37.0'
 
 	//redis and kafka
 	implementation 'redis.clients:jedis:5.2.0'
