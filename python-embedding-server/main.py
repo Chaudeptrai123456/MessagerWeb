@@ -1,7 +1,9 @@
-from fastapi import FastAPI
-from qdrant_service import init_collections, save_product, save_order,get_all_products_from_qdrant
+from fastapi import FastAPI,Body
+from qdrant_service import init_collections, save_product, save_order,get_all_products_from_qdrant,stringify_product,get_embedding,find_similar_products
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from qdrant_client import QdrantClient
+from pydantic import BaseModel
+from typing import List, Optional
 
 from fastapi import HTTPException
 app = FastAPI(title="AI Recommendation Service")
@@ -16,6 +18,7 @@ def add_product(data: dict):
     except Exception as e:
         print("❌ Lỗi khi xử lý sản phẩm:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/add_order")
 def add_order(data: dict):
     save_order(data)
@@ -63,3 +66,22 @@ def get_all_products():
     except Exception as e:
         print("❌ Lỗi khi lấy danh sách sản phẩm:", e)
         raise HTTPException(status_code=500, detail=str(e))
+class SimilarProductRequest(BaseModel):
+    text: str
+    limit: Optional[int] = 5
+@app.post("/find_similar_products")
+def find_similar_product(body: dict = Body(...)):
+    try:
+        # Lấy text từ body JSON
+        query_text = body.get("text", "")
+        limit = body.get("limit", 7)
+
+        if not query_text:
+            return {"error": "Thiếu trường 'text' trong body JSON"}
+
+        results = find_similar_products(query_text, limit)
+        return results
+
+    except Exception as e:
+        print(f"❌ Lỗi khi tìm kiếm tương tự: {e}")
+        return {"error": str(e)}

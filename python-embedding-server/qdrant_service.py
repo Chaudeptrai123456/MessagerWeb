@@ -10,6 +10,8 @@ import numpy as np
 # Gọi LocalAI để lấy embedding
 # Khởi tạo Qdrant client
 client = QdrantClient(host="localhost", port=6333)
+target_dim = 1024
+
 QDRANT_MAX_DIM = 300000
 # Khởi tạo collection nếu chưa có
 def init_collections():
@@ -24,7 +26,6 @@ def init_collections():
                 collection_name=name,
                 vectors_config=VectorParams(size=size, distance=Distance.COSINE)
             )
-target_dim = 1024
 def get_all_products_from_qdrant(limit_per_page: int = 100):
     """
     Lấy toàn bộ product từ Qdrant (bao gồm id và payload).
@@ -76,7 +77,7 @@ def reduce_vector_dim(vector: np.ndarray, target_dim) -> np.ndarray:
         reduced.append(np.mean(vector[start:end]))
     return np.array(reduced, dtype=np.float32)
 
-def get_embedding(text: str, model: str = "arcee-ai_AFM-4.5B-Q4_K_M.gguf", target_dim: int = 128) -> List[float]:
+def get_embedding(text: str, model: str = "arcee-ai_AFM-4.5B-Q4_K_M.gguf", target_dim: int = 1024) -> List[float]:
     url = "http://localhost:8080/embeddings"
     payload = {
         "input": text,
@@ -125,7 +126,7 @@ def stringify_order(order: dict) -> str:
 def save_product(product: dict):
     text = stringify_product(product)
     vector = get_embedding(text)
-    result = client.upsert(
+    client.upsert(
         collection_name="products",
         points=[
             PointStruct(
@@ -135,6 +136,7 @@ def save_product(product: dict):
             )
         ]
     )
+    check_product_saved(abs(hash(product["id"])) % (10**8))  # ID mà in ra ở trên
 
 # Lưu order vào Qdrant
 def save_order(order: dict):
@@ -150,6 +152,45 @@ def save_order(order: dict):
             )
         ]
     )
+def check_product_saved(qdrant_id: int):
+    result = client.retrieve(
+        collection_name="products",
+        ids=[qdrant_id],
+        with_payload=True,
+        with_vectors=False
+    )
+    result1 = client.retrieve(
+    collection_name="products",
+    ids=[74847342],
+    with_payload=True,
+    with_vectors=True
+    )
+    print("check existed product "  )
+    print(result)
+    print("test vector")
+    print(result1)
+def find_similar_products(query_text:str,limit: int = 5) :
+    query_vector = get_embedding(query_text)
+    
+    # 2️⃣ Giảm chiều nếu cần (nếu Châu đang có bước PCA/mean pooling 128000→1024)
+    query_vector = reduce_vector_dim(query_vector,1024)  # nếu có hàm giảm chiều của Châu
+    
+    # 3️⃣ Gọi Qdrant search
+    results = client.search(
+        collection_name="products",
+        query_vector=query_vector,
+        limit=limit,
+        with_payload=True
+    )
+    
+    # 4️⃣ In ra kết quả
+    print(f"\n🔍 Kết quả tìm kiếm cho: '{query_text}'")
+    for r in results:
+        print(f"🆔 {r.id} | 📈 Score: {r.score:.4f}")
+        print(f"📦 Tên sản phẩm: {r.payload.get('name')}")
+        print(f"💬 Mô tả: {r.payload.get('description')}\n")
+    
+    return results
 def get_all_product_vectors_from_qdrant(limit_per_page: int = 100) -> List[List[float]]:
     """
     Lấy toàn bộ vector từ collection 'products' trong Qdrant.
@@ -209,8 +250,45 @@ def get_order_by_id(order_id: str) -> dict:
 # Hàm tạo embedding giả lập (nếu cần test nhanh)
 def fake_embedding(seed: int) -> List[float]:
     np.random.seed(seed)
-    return np.random.rand(128).tolist()
+    return np.random.rand(1024).tolist()
 # 📦 Model dữ liệu đầu vào cho sản phẩm (nếu dùng FastAPI)
+def search_similar_products(query_text: str, top_k: int = 5):
+    """
+    Tìm kiếm sản phẩm gần giống (semantic search) dựa trên nội dung query_text.
+    Dùng LocalAI để sinh embedding cho query, sau đó tìm trong Qdrant.
+    """
+    print(f"🔍 Đang tìm sản phẩm tương tự với: '{query_text}'")
+    # Lấy embedding từ LocalAI
+    query_vector = get_embedding(query_text)
+    try:
+        # Truy vấn Qdrant
+        response = client.query_points(
+            collection_name="products",
+            query=query_vector,
+            limit=top_k,
+            with_payload=True,
+            with_vectors=False
+        )
+        results = []
+        for point in response.points:
+            product = point.payload
+            score = point.score  # cosine similarity (gần 1 là giống)
+            results.append({
+                "id": product.get("id"),
+                "name": product.get("name"),
+                "score": score,
+                "price": product.get("price"),
+                "category": product.get("category", {}).get("name") if product.get("category") else None,
+                "description": product.get("description")
+            })
+
+        print(f"✅ Tìm thấy {len(results)} sản phẩm tương tự.")
+        return results
+
+    except Exception as e:
+        print(f"❌ Lỗi khi tìm kiếm tương tự: {e}")
+        return []
+
 class Image(BaseModel):
     id: int
     filename: str
