@@ -1,0 +1,8 @@
+.home-container {
+    width: 90%;
+    background-color: red;
+}
+.image{
+    max-width: 50px;
+    max-height: 50px;
+}

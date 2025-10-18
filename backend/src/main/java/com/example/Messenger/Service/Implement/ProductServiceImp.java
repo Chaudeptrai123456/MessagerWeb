@@ -1,5 +1,7 @@
 package com.example.Messenger.Service.Implement;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.Messenger.Entity.*;
 import com.example.Messenger.Record.DiscountRequest;
 import com.example.Messenger.Record.ImageRequest;
@@ -41,16 +43,19 @@ public class ProductServiceImp implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ImageRepository imageRepository;
 
+    private final Cloudinary cloudinary;
+
     @Autowired
     public ProductServiceImp(RedisService redisService, DiscountRepository discountRepository, ProductRepository productRepository,
                              EmbeddingService embeddingService,
-                             CategoryRepository categoryRepository, ImageRepository imageRepository) {
+                             CategoryRepository categoryRepository, ImageRepository imageRepository, Cloudinary cloudinary) {
         this.redisService = redisService;
         this.discountRepository = discountRepository;
         this.productRepository = productRepository;
         this.embeddingService = embeddingService;
         this.categoryRepository = categoryRepository;
         this.imageRepository = imageRepository;
+        this.cloudinary = cloudinary;
     }
 
     @Override
@@ -69,17 +74,17 @@ public class ProductServiceImp implements ProductService {
         product.setCategory(category);
         product.setQuantity(req.quantity());
         // 3. Map images
-        List<Image> images = Optional.ofNullable(req.images())
-                .orElse(Collections.emptyList())
-                .stream()
-                .filter(Objects::nonNull)
-                .map(bytes -> {
-                    Image img = new Image();
-                    img.setData(bytes.getBytes());
-                    img.setProduct(product);
-                    return img;
-                })
-                .collect(Collectors.toList());
+//        List<Image> images = Optional.ofNullable(req.images())
+//                .orElse(Collections.emptyList())
+//                .stream()
+//                .filter(Objects::nonNull)
+//                .map(bytes -> {
+//                    Image img = new Image();
+//                    img.setData(bytes.getBytes());
+//                    img.setProduct(product);
+//                    return img;
+//                })
+//                .collect(Collectors.toList());
 
         // 4. Map features
         List<Feature> features = Optional.ofNullable(req.features())
@@ -95,26 +100,11 @@ public class ProductServiceImp implements ProductService {
                 })
                 .collect(Collectors.toList());
 
-        product.setImages(new HashSet<>(images));
+//        product.setImages(new HashSet<>(images));
         product.setFeatures(new HashSet<>(features));
 
         // 5. ✅ Lưu xuống DB trước
         Product saved = productRepository.save(product);
-
-//        // 6. 🔄 Tạo embedding sau (nếu lỗi cũng không sao)
-//        CompletableFuture.runAsync(() -> {
-//            try {
-//                List<Feature> featureList = features;
-//                ProductEmbedding embedding = new ProductEmbedding(product.getId(), product.getName(),product.getDescription(),category,features);
-//                float[] vector = embeddingService.generateEmbedding(embedding);
-//                saved.setEmbedding(Arrays.toString(vector));
-//                productRepository.save(saved);
-//                System.out.println("✅ Embedding created for product: " + saved.getName());
-//            } catch (Exception e) {
-//                System.err.println("⚠️ Embedding failed for " + saved.getName() + ": " + e.getMessage());
-//            }
-//        });
-
         return saved;
     }
 
@@ -153,17 +143,6 @@ public class ProductServiceImp implements ProductService {
         }
         // reset images
         existing.getImages().clear();
-        if (images != null && !images.isEmpty()) {
-            existing.setImages(
-                    images.stream().map(file -> {
-                        try {
-                            return new Image(file.getName(),file.getContentType(),existing, file.getBytes());
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }).collect(Collectors.toSet())
-            );
-        }
         System.out.println(existing.getQuantity());
         return productRepository.save(existing);
     }
@@ -241,50 +220,47 @@ public class ProductServiceImp implements ProductService {
 
     @Override
     public Image addImageToProduct(String productId, ImageRequest req) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-
-        // Giải mã base64 thành byte[]
-        byte[] bytes;
-        try {
-            bytes = Base64.getDecoder().decode(req.base64Data());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid base64 image");
-        }
-//
-//        Image image = Image.builder()
-//                .filename(req.filename())
-//                .contentType(req.contentType())
-//                .data(bytes)
-//                .product(product)
-//                .build();
-        Image image = new Image();
-        image.setFilename(req.filename());
-        image.setContentType(req.contentType());
-        image.setData(bytes);
-        image.setProduct(product);
-        imageRepository.save(image);
-        product.getImages().add(image);
-        productRepository.save(product);
-
-        return image;
+        return null;
     }
 
     @Override
     public Product addImagesToProduct(String productId, List<MultipartFile> files) throws IOException {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        List<Image> images = new ArrayList<>();
+
         for (MultipartFile file : files) {
+            // 🌥 Upload từng file lên Cloudinary
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "folder", "products/" + productId  // mỗi product có folder riêng
+            ));
+
+            // 🧾 Lấy URL ảnh từ Cloudinary
+            String imageUrl = (String) uploadResult.get("secure_url");
+
+            // 📸 Tạo đối tượng Image và gán thông tin
             Image image = new Image();
             image.setProduct(product);
-            image.setContentType(file.getContentType());
+            image.setUrl(imageUrl);
             image.setFilename(file.getOriginalFilename());
-            image.setData(file.getBytes());
-            product.getImages().add(image);
-            imageRepository.save(image);
+            image.setContentType(file.getContentType());
+
+            images.add(image);
         }
+
+        // 💾 Lưu tất cả ảnh
+        imageRepository.saveAll(images);
+
+        // Gắn danh sách ảnh vào product (nếu chưa có)
+        if (product.getImages() == null) {
+            product.setImages(null);
+        }
+        product.getImages().addAll(images);
+
         return productRepository.save(product);
     }
+
     @Override
     public Page<Product> searchProducts(
             String categoryId,
@@ -310,5 +286,12 @@ public class ProductServiceImp implements ProductService {
 
         redisService.saveList(cacheKey, new PageWrapper<>(result));
         return result;
+    }
+
+    @Override
+    public List<Product> getTopDiscountProducts(int limits) {
+        Pageable pageable = PageRequest.of(0, limits);
+        LocalDate today = LocalDate.now();
+        return discountRepository.findTopDiscountProducts(today, pageable);
     }
 }

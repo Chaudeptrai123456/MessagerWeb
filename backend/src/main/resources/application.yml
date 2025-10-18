@@ -4,7 +4,6 @@ cloudinary:
   cloud-name: tienanh
   api-key: 623447517299521
   api-secret: hgJyenM0TTgYfag5APqLKUO7Uy4
-
 google:
   client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
   client-secret: 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
@@ -12,6 +11,10 @@ google:
   scopes:
     - https://www.googleapis.com/auth/gmail.send
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   mail:
     host: smtp.gmail.com
     port: 587
@@ -45,7 +48,7 @@ spring:
       qdrant:
         host: localhost
         port: 6334
-        api-key: ""  # Nếu không bật xác thực thì để trống
+        api-key: "Chaudeptrai"  # Nếu không bật xác thực thì để trống
         collection-name: my_vectors
         use-tls: false
         initialize-schema: true
@@ -62,12 +65,9 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
-
   sql:
     init:
       mode: always
-
   security:
     oauth2:
       client:
@@ -81,16 +81,13 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             authorization-grant-type: authorization_code
             client-name: Google
-
 app:
   auth:
     host: localhost
     port: 9999
-
 logging:
   level:
     org.springframework.security: DEBUG
-
 ---
 spring.config.activate.on-profile: docker
 server:

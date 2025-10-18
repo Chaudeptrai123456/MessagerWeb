@@ -10,7 +10,7 @@ body, html {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  width: 100%;
+  width: 100vh;
 }
 
 /* Header giữ nguyên */
@@ -22,7 +22,7 @@ header {
 main {
   flex: 1;
   width: 100%;
-  max-width: 1200px; /* ✅ Giới hạn chiều rộng để không bị kéo quá to */
+  /* max-width: 1200px;  ✅ Giới hạn chiều rộng để không bị kéo quá to */ 
   margin: 0 auto;     /* ✅ Căn giữa */
   padding: 20px;      /* ✅ Thêm khoảng cách để không dính sát viền */
 }

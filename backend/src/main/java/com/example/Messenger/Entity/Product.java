@@ -32,6 +32,8 @@ public class Product {
     private LocalDate createdAt;
     private String name;
     @Column(length = 2000)
+
+
     private String description;
 
     private Integer quantity;

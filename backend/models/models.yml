@@ -1,7 +1,16 @@
 models:
-  - name: text-embedding-mxbai
-    url: huggingface://mxbai/Embed-Large-v1-GGUF/mxbai-embed-large-v1.Q4_K_M.gguf
-    backend: llama
+  - name: qwen-embedding
+    backend: llama.cpp
+    model: Qwen3-Embedding-4B-Q4_K_M.gguf
     parameters:
-      model: mxbai-embed-large-v1.Q4_K_M.gguf
-      embeddings: true
+      task: embeddings
+      threads: 4
+      context_size: 4096
+
+  - name: minicpm
+    backend: llama.cpp
+    model: minicpm-v-4_5-Q4_K_M.gguf
+    parameters:
+      task: embeddings
+      threads: 4
+      context_size: 4096

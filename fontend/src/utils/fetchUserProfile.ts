@@ -11,7 +11,7 @@ export interface UserProfile {
 export async function fetchUserProfile(): Promise<UserProfile | null> {
   try {
     // 🧠 Gọi API để lấy thông tin user từ token
-    const response = await axiosInstance.get(API_PATHS.AUTH.PROFILE, {
+    const response = await axiosInstance.get(API_PATHS.USER.PROFILE, {
       withCredentials: true,
     });
 

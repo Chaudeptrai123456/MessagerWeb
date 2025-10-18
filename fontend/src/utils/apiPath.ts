@@ -24,10 +24,10 @@ export const API_PATHS = {
     DELETE_USER_BY_ID: (userId: string) => `/api/users/${userId}`,
     UPDATE_USER_BY_ID: (userId: string) => `/api/users/${userId}`,
   },
-
   ORDER: {
     GET_ORDERS_BY_USER_ID: (userId: string) => `/api/orders/user/${userId}`,
   },
-
-  PRODUCT: {},
+  PRODUCT: {
+    TOP_DISCOUNT: "/api/products/top-discount"
+  },
 };

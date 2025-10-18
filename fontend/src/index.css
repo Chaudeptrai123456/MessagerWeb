@@ -15,8 +15,8 @@ html {
 
 body {
   font-family: "Inter", "Poppins", sans-serif;
-  background-color: #0d1117;       /* Nền tối sang trọng */
-  color: #e6edf3;                  /* Màu chữ nhẹ cho nền tối */
+  /* background-color: #0d1117;        Nền tối sang trọng */ 
+  color: #e6edf3;                  /*Màu chữ nhẹ cho nền tối*/
   min-height: 100vh;
   line-height: 1.6;
   display: flex;
@@ -29,7 +29,7 @@ body {
 :root {
   --color-bg: #0d1117;
   --color-surface: #161b22;
-  --color-accent: #00d1b2;
+  /* --color-accent: #00d1b2; */
   --color-accent-hover: #00b49c;
   --color-text: #e6edf3;
   --color-muted: #8b949e;

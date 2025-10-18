@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Service
 public class EmbeddingService {
-    private static final String PYTHON_SERVER_URL = "http://localhost:8000/embed";
+    private static final String PYTHON_SERVER_URL = "http://localhost:8000/v1/embeddings";
     private final RestTemplate restTemplate = new RestTemplate();
 
     public Map<String, Object> generateEmbedding(ProductEmbedding product) {

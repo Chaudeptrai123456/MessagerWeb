@@ -62,6 +62,7 @@ public class SecurityConfig {
                     return config;
                 }))                .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET,"/api/categories").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/products/top-discount").permitAll()
                         .requestMatchers(
                                 "/",
                                 "/login",

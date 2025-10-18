@@ -89,11 +89,12 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/images/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Product> uploadImages(
             @PathVariable String id,
             @RequestPart("images") List<MultipartFile> images
     ) throws IOException {
+        System.out.println("test filter");
         Product updatedProduct = productService.addImagesToProduct(id, images);
         return ResponseEntity.ok(updatedProduct);
     }
@@ -120,5 +121,10 @@ public class ProductController {
     ) {
         Product updated = productService.addDiscountToProduct(productId, request);
         return ResponseEntity.ok(updated);
+    }
+    @GetMapping("/top-discount")
+    public ResponseEntity<List<Product>> getTopDiscountedProducts() {
+        List<Product> products = productService.getTopDiscountProducts(7);
+        return ResponseEntity.ok(products);
     }
 }

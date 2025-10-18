@@ -27,25 +27,17 @@ public class Image {
     @JoinColumn(name = "product_id")
     @JsonIgnore // tránh vòng lặp
     private Product product;
-
-    @Lob
-    @Column(columnDefinition = "bytea") // PostgreSQL dùng bytea để lưu nhị phân
-    private byte[] data;
     public Image(){}
-    public Image( String filename, String contentType, Product product, byte[] data) {
+
+    public Image(Long id, String filename, String contentType, Product product, String url) {
+        this.id = id;
         this.filename = filename;
         this.contentType = contentType;
         this.product = product;
-        this.data = data;
+        this.url = url;
     }
 
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
+    private String url;
 
     public Long getId() {
         return id;
@@ -71,11 +63,19 @@ public class Image {
         this.contentType = contentType;
     }
 
-    public byte[] getData() {
-        return data;
+    public Product getProduct() {
+        return product;
     }
 
-    public void setData(byte[] data) {
-        this.data = data;
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

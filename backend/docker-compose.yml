@@ -1,4 +1,36 @@
 services:
+  localai:
+    image: localai/localai:v3.6.0-aio-gpu-nvidia-cuda-12
+    container_name: localai
+    restart: unless-stopped
+
+    # Chạy bằng user không phải root (UID:GID -> thay 1000:1000 nếu cần)
+    user: "0:0"
+    # Bind chỉ trên localhost để không expose public
+    ports:
+      - "8080:8080"
+    # Mount models read-only để tránh bị sửa từ trong container
+    volumes:
+      - ./models.yaml:/models/models.yaml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [ "0" ]
+              capabilities: [ "gpu" ]
+        limits:
+          cpus: "4.0"
+          memory: 8G
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: false   # -> đặt true nếu chắc chắn không cần ghi filesystem
+    environment:
+      - MODEL_DOWNLOADS=true
+    networks:
+      - app-network
   backend:
     build: .
     container_name: backend
@@ -49,6 +81,7 @@ services:
     volumes:
       - ./qdrant_data:/qdrant/storage
     environment:
+      QDRANT__AUTH__API_KEY: ${QDRANT_API_KEY}
       QDRANT__SERVICE__HOST: 0.0.0.0
       QDRANT__SERVICE__GRPC_PORT: 6334
       QDRANT__SERVICE__HTTP_PORT: 6333

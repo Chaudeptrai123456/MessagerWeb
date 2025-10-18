@@ -31,4 +31,6 @@ public interface ProductService {
             Double maxPrice,
             String featureName,
             String featureValue, int page, int size);
+
+    public List<Product> getTopDiscountProducts(int limits);
 }
