@@ -6,6 +6,7 @@ import com.example.Messenger.Entity.*;
 import com.example.Messenger.Record.DiscountRequest;
 import com.example.Messenger.Record.ImageRequest;
 import com.example.Messenger.Record.ProductRequest;
+import com.example.Messenger.Record.UpdateProduct;
 import com.example.Messenger.Repository.CategoryRepository;
 import com.example.Messenger.Repository.DiscountRepository;
 import com.example.Messenger.Repository.ImageRepository;
@@ -35,6 +36,7 @@ public class ProductServiceImp implements ProductService {
     private static final Duration PRODUCT_TTL = Duration.ofHours(1);
     private static final Duration PRODUCT_PAGE_TTL = Duration.ofMinutes(5);
     private ProductIdUtil productIdUtil;
+
     private final RedisService redisService;
     private final DiscountRepository discountRepository;
 
@@ -123,15 +125,14 @@ public class ProductServiceImp implements ProductService {
         return slug + "_" + datePart + "_" + randomPart;
     }
     @Override
-    public Product updateProduct(String id, Product newProduct, List<MultipartFile> images) throws IOException {
+    public Product updateProduct(String id, UpdateProduct newProduct, List<MultipartFile> images) throws IOException {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
-
+        existing.setUpdateAt(LocalDate.now());
         existing.setName(newProduct.getName() == null ? existing.getName():newProduct.getName());
         existing.setDescription(newProduct.getDescription() == null ? existing.getDescription(): newProduct.getDescription());
         existing.setPrice(newProduct.getPrice() == null ? existing.getPrice() : existing.getPrice()+ newProduct.getPrice());
 //        existing.setEmbedding(newProduct.getEmbedding() == null ? existing.ge);
-        existing.setCategory(newProduct.getCategory() == null ? existing.getCategory(): newProduct.getCategory());
         existing.setQuantity(newProduct.getQuantity() == null ? existing.getQuantity(): existing.getQuantity()+ newProduct.getQuantity());
         // reset features
 //        existing.getFeatures().clear();

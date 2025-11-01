@@ -11,6 +11,13 @@ google:
   scopes:
     - https://www.googleapis.com/auth/gmail.send
 spring:
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    properties:
+      spring.json.trusted.packages: "*"
   servlet:
     multipart:
       max-file-size: 10MB
@@ -53,9 +60,9 @@ spring:
         use-tls: false
         initialize-schema: true
   datasource:
-    url: jdbc:postgresql://localhost:5432/message_db
-    username: user
-    password: password
+    url: jdbc:postgresql://localhost:5432/ecommerce
+    username: master
+    password: 123
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -87,6 +94,8 @@ app:
     port: 9999
 logging:
   level:
+    org.apache.kafka: INFO
+    org.springframework.kafka: INFO
     org.springframework.security: DEBUG
 ---
 spring.config.activate.on-profile: docker

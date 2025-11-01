@@ -9,6 +9,7 @@ import com.example.Messenger.Repository.OrderItemRepository;
 import com.example.Messenger.Repository.OrderRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Service.OrderService;
+import com.example.Messenger.Service.PendingOrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,17 +18,20 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @Transactional
 public class OrderServiceImpl implements OrderService {
+    private final PendingOrderService pendingOrderService;
     private final GmailServiceImp gmailServiceImp;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
 
 
-    public OrderServiceImpl(GmailServiceImp gmailServiceImp, OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository) {
+    public OrderServiceImpl(PendingOrderService pendingOrderService, GmailServiceImp gmailServiceImp, OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository) {
+        this.pendingOrderService = pendingOrderService;
         this.gmailServiceImp = gmailServiceImp;
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
@@ -142,5 +146,49 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> getOrdersByUser(String userId) {
         return orderRepository.findByUserId(userId);
+    }
+    @Override
+    public String requestOrderConfirmation(OrderRequest request) {
+        String token = UUID.randomUUID().toString();
+        pendingOrderService.savePendingOrder(token, request);
+        gmailServiceImp.sendConfirmationEmail(request.customerEmail(), token);
+        return token;
+    }
+
+    @Override
+    @Transactional
+    public Order confirmOrder(String token) {
+        OrderRequest request = pendingOrderService.getPendingOrder(token);
+        if (request == null) throw new RuntimeException("Token không hợp lệ hoặc đã hết hạn!");
+
+        Order order = new Order();
+        order.setId(UUID.randomUUID().toString());
+        order.setCustomerName(request.customerName());
+        order.setAddress(request.address());
+        order.setCustomerEmail(request.customerEmail());
+        order.setCreatedAt(LocalDateTime.now());
+        order.setStatus("CONFIRMED");
+
+        double totalAmount = 0.0;
+
+        for (OrderItemRequest itemReq : request.items()) {
+            Product product = productRepository.findById(itemReq.productId())
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + itemReq.productId()));
+
+            if (product.getQuantity() < itemReq.quantity()) {
+                throw new RuntimeException("Not enough stock for product: " + product.getName());
+            }
+
+            product.setQuantity(product.getQuantity() - itemReq.quantity());
+            productRepository.save(product);
+            totalAmount += product.getPrice() * itemReq.quantity();
+        }
+
+        order.setTotalAmount(totalAmount);
+        Order saved = orderRepository.save(order);
+
+        pendingOrderService.deletePendingOrder(token);
+        gmailServiceImp.sendSuccessEmail(request.customerEmail(), saved);
+        return saved;
     }
 }

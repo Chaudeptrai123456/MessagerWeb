@@ -16,8 +16,15 @@ java {
 repositories {
 	mavenCentral()
 }
+// ép xài TZ Hồ Chí Minh
+bootRun {
+	jvmArgs = ["-Duser.timezone=Asia/Ho_Chi_Minh"]
+}
 
 dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.apache.commons:commons-pool2'
+
 	// gmail api
 	implementation 'com.google.api-client:google-api-client:2.2.0'
 	implementation('org.springframework.boot:spring-boot-starter-mail:3.1.5')
@@ -72,6 +79,6 @@ dependencies {
 	//	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
-}
+//tasks.named('test') {
+//	useJUnitPlatform()
+//}

@@ -30,6 +30,7 @@ public class Product {
     @Id
     private String id;
     private LocalDate createdAt;
+    private LocalDate updateAt;
     private String name;
     @Column(length = 2000)
 
@@ -176,5 +177,13 @@ public class Product {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public LocalDate getUpdateAt() {
+        return updateAt;
+    }
+
+    public void setUpdateAt(LocalDate updateAt) {
+        this.updateAt = updateAt;
     }
 }

@@ -27,29 +27,28 @@ def init_collections():
                 vectors_config=VectorParams(size=size, distance=Distance.COSINE)
             )
 def get_all_products_from_qdrant(limit_per_page: int = 100):
-    """
-    Lấy toàn bộ product từ Qdrant (bao gồm id và payload).
-    Hỗ trợ tự động scroll qua tất cả các trang.
-    """
     all_products = []
     scroll_offset = None
 
     print("📦 Đang tải toàn bộ products từ Qdrant...")
 
     while True:
-        result, scroll_offset = client.scroll(
+        points, scroll_offset = client.scroll(
             collection_name="products",
             limit=limit_per_page,
-            offset=scroll_offset
+            offset=scroll_offset,
+            with_payload=True,
+            with_vectors=True  # 👈 lấy cả vector
         )
 
-        if not result:
+        if not points:
             break
 
-        for point in result:
+        for point in points:
             all_products.append({
                 "qdrant_id": point.id,
-                "product": point.payload
+                "product": point.payload,
+                "vector_length": len(point.vector) if point.vector else 0  # 👈 kiểm tra chiều vector
             })
 
         print(f"✅ Đã tải {len(all_products)} sản phẩm...")
@@ -59,6 +58,7 @@ def get_all_products_from_qdrant(limit_per_page: int = 100):
 
     print(f"🎉 Hoàn tất! Tổng cộng {len(all_products)} products được lấy ra.")
     return all_products
+
 
 def reduce_vector_dim(vector: np.ndarray, target_dim) -> np.ndarray:
     """
@@ -124,6 +124,11 @@ def stringify_order(order: dict) -> str:
     return f"Order by {order['customerName']} ({order['customerEmail']}) - {order['address']} - Total: {order['totalAmount']} USD - Status: {order['status']} - Items: {items_text}"
 # Lưu product vào Qdrant
 def save_product(product: dict):
+    client.delete_collection("products")
+    client.create_collection(
+    collection_name="products",
+        vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
+    )
     text = stringify_product(product)
     vector = get_embedding(text)
     client.upsert(
@@ -132,7 +137,8 @@ def save_product(product: dict):
             PointStruct(
                 id=abs(hash(product["id"])) % (10**8),
                 vector=vector,
-                payload=product
+                payload=product,
+                
             )
         ]
     )
@@ -192,25 +198,20 @@ def find_similar_products(query_text:str,limit: int = 5) :
     
     return results
 def get_all_product_vectors_from_qdrant(limit_per_page: int = 100) -> List[List[float]]:
-    """
-    Lấy toàn bộ vector từ collection 'products' trong Qdrant.
-    Tự động scroll qua các trang để tránh lỗi bộ nhớ.
-    """
     all_vectors = []
     scroll_offset = None
 
     print("📦 Đang tải toàn bộ vectors từ Qdrant...")
 
     while True:
-        response = client.scroll(
+        points, scroll_offset = client.scroll(
             collection_name="products",
             limit=limit_per_page,
             offset=scroll_offset,
-            with_vector=True,
+            with_vectors=True,
             with_payload=False
         )
 
-        points = response.points
         if not points:
             break
 
@@ -219,7 +220,6 @@ def get_all_product_vectors_from_qdrant(limit_per_page: int = 100) -> List[List[
 
         print(f"✅ Đã tải {len(all_vectors)} vectors...")
 
-        scroll_offset = response.next_page_offset
         if scroll_offset is None:
             break
 
@@ -288,7 +288,53 @@ def search_similar_products(query_text: str, top_k: int = 5):
     except Exception as e:
         print(f"❌ Lỗi khi tìm kiếm tương tự: {e}")
         return []
+def save_order(order: dict):
+    try:
+        print(f"🧾 Đang lưu order '{order['id']}' vào Qdrant...")
 
+        # Sinh chuỗi mô tả và embedding
+        text = stringify_order(order)
+        vector = get_embedding(text)
+
+        # Upsert vào Qdrant
+        client.upsert(
+            collection_name="orders",
+            points=[
+                PointStruct(
+                    id=abs(hash(order["id"])) % (10**8),
+                    vector=vector,
+                    payload=order
+                )
+            ]
+        )
+
+        print(f"✅ Đã lưu order '{order['id']}' thành công!")
+    except Exception as e:
+        print(f"❌ Lỗi khi lưu order: {e}")
+def find_similar_orders(query_text: str, limit: int = 5):
+    try:
+        query_vector = get_embedding(query_text)
+        query_vector = reduce_vector_dim(query_vector, 1024)
+
+        results = client.search(
+            collection_name="orders",
+            query_vector=query_vector,
+            limit=limit,
+            with_payload=True
+        )
+
+        print(f"\n🔍 Kết quả tìm kiếm order tương tự với: '{query_text}'")
+        for r in results:
+            order = r.payload
+            print(f"🧾 ID: {order.get('id')}")
+            print(f"👤 Khách hàng: {order.get('customerName')}")
+            print(f"💰 Tổng tiền: {order.get('totalAmount')} USD")
+            print(f"📈 Score: {r.score:.4f}\n")
+
+        return results
+    except Exception as e:
+        print(f"❌ Lỗi khi tìm kiếm order tương tự: {e}")
+        return []
 class Image(BaseModel):
     id: int
     filename: str
@@ -322,3 +368,19 @@ class ProductFull(BaseModel):
     category: Category
     features: List[Feature]
     discounts: List[Discount]
+class OrderItem(BaseModel):
+    id: str
+    quantity: int
+    price: float
+    product: ProductFull
+    order: str
+
+class Order(BaseModel):
+    id: str
+    createdAt: str
+    customerName: str
+    customerEmail: str
+    address: str
+    status: str
+    totalAmount: float
+    items: List[OrderItem]

@@ -6,6 +6,7 @@ import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Record.DiscountRequest;
 import com.example.Messenger.Record.ImageRequest;
 import com.example.Messenger.Record.ProductRequest;
+import com.example.Messenger.Record.UpdateProduct;
 import com.example.Messenger.Repository.CategoryRepository;
 import com.example.Messenger.Service.Implement.ProductServiceImp;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,8 @@ public class ProductController {
     @PostMapping("/{id}")
     public ResponseEntity<Product> updateProduct(
             @PathVariable String id,
-            @RequestPart("product") Product product
+//            @RequestPart("product") Product product
+            @RequestBody UpdateProduct product
     ) throws IOException {
         return ResponseEntity.ok(productService.updateProduct(id, product, null));
     }

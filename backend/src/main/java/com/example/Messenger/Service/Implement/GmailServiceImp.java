@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 public class GmailServiceImp {
     @Autowired
     private JavaMailSender mailSender;
+    private static final String CONFIRM_URL = "http://localhost:9999/api/orders/confirm?token=%s";
 
     public void sendEmail(String to, String subject, Order order) {
         System.out.println("test send email");
@@ -44,7 +45,50 @@ public class GmailServiceImp {
         mailSender.send(message);
     }
 
-    private void announcementSaleOf() {
+    public void sendConfirmationEmail(String to, String token) {
+        String confirmLink = CONFIRM_URL.formatted(token);
+        String body = """
+        Xin chào,
 
+        Cảm ơn bạn đã đặt hàng tại cửa hàng của chúng tôi 🎉
+        
+        Để xác nhận đơn hàng, vui lòng nhấn vào liên kết bên dưới:
+        
+        🔗 %s
+
+        Liên kết này sẽ hết hạn sau 30 phút.
+
+        Trân trọng,
+        Cửa hàng của Châu 💙
+        """.formatted(confirmLink);
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("phamchaugiatu123@gmail.com");
+        message.setTo(to);
+        message.setSubject("Xác nhận đơn hàng của bạn");
+        message.setText(body);
+        mailSender.send(message);
+    }
+
+    public void sendSuccessEmail(String to, Order order) {
+        String body = """
+        Đơn hàng của bạn đã được xác nhận thành công 🎉
+
+        🧾 Mã đơn: %s
+        Tổng tiền: %.2f VNĐ
+        Trạng thái: %s
+
+        Chúng tôi sẽ thông báo khi đơn hàng được giao cho đơn vị vận chuyển.
+
+        Trân trọng,
+        Cửa hàng của Châu 💙
+        """.formatted(order.getId(), order.getTotalAmount(), order.getStatus());
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("phamchaugiatu123@gmail.com");
+        message.setTo(to);
+        message.setSubject("✅ Đơn hàng xác nhận thành công!");
+        message.setText(body);
+        mailSender.send(message);
     }
 }

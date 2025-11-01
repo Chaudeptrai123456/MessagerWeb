@@ -12,4 +12,6 @@ public interface OrderService {
     Order updateStatus(String id, String status);
     void cancelOrder(String id);
     public List<Order> getOrdersByUser(String userId);
+    public String requestOrderConfirmation(OrderRequest request);
+    public Order confirmOrder(String token) ;
 }

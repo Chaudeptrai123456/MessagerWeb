@@ -3,6 +3,7 @@ package com.example.Messenger.Controller;
 
 import com.example.Messenger.Entity.Order;
 import com.example.Messenger.Record.OrderRequest;
+import com.example.Messenger.Service.Implement.OrderServiceImpl;
 import com.example.Messenger.Service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,18 +15,23 @@ import java.util.List;
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private final OrderService orderService;
-    @Autowired
-    public OrderController(OrderService orderService) {
+    private final OrderServiceImpl orderService;
+
+    public OrderController(OrderServiceImpl orderService) {
         this.orderService = orderService;
     }
 
-    // ➕ Tạo đơn hàng mới
-    @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody OrderRequest request) {
-        return ResponseEntity.ok(orderService.createOrder(request));
+    @PostMapping("/request")
+    public ResponseEntity<String> requestOrder(@RequestBody OrderRequest request) {
+        String token = orderService.requestOrderConfirmation(request);
+        return ResponseEntity.ok("📧 Đã gửi email xác nhận đến " + request.customerEmail());
     }
 
+    @GetMapping("/confirm")
+    public ResponseEntity<String> confirmOrder(@RequestParam String token) {
+        Order order = orderService.confirmOrder(token);
+        return ResponseEntity.ok("✅ Đơn hàng " + order.getId() + " đã được xác nhận!");
+    }
     // 🔍 Lấy tất cả đơn hàng
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {

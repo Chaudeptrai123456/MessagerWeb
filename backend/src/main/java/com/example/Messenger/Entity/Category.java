@@ -21,14 +21,11 @@ public class Category {
     @Id
     private String id = UUID.randomUUID().toString();
     private String name;
-
     private String description;
-
     // Một Category có nhiều Product
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("category")
     private Set<Product> products = new HashSet<>();
-
     public String getId() {
         return id;
     }

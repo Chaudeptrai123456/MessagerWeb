@@ -61,6 +61,7 @@ public class SecurityConfig {
                     config.setAllowCredentials(true);
                     return config;
                 }))                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET,"/api/orders/confirm").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/categories").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/products/top-discount").permitAll()
                         .requestMatchers(

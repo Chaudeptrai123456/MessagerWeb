@@ -3,7 +3,6 @@ services:
     image: localai/localai:v3.6.0-aio-gpu-nvidia-cuda-12
     container_name: localai
     restart: unless-stopped
-
     # Chạy bằng user không phải root (UID:GID -> thay 1000:1000 nếu cần)
     user: "0:0"
     # Bind chỉ trên localhost để không expose public
@@ -41,29 +40,53 @@ services:
       - kafka
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/message_db
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecommerce
+      SPRING_DATASOURCE_USERNAME: master
+      SPRING_DATASOURCE_PASSWORD: 123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     ports:
       - "9999:9999"
     networks:
       - app-network
-
   postgres:
-    image: postgres:latest
-    container_name: postgres
+    image: postgres:18
+    container_name: postgres-master
+    restart: always
     environment:
-      POSTGRES_DB: message_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: master
+      POSTGRES_PASSWORD: 123
     ports:
       - "5432:5432"
     volumes:
-      - message_postgres_data:/var/lib/postgresql/data
+      - message_postgres_data:/var/lib/postgresql
+      - ./master/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
+      - ./master/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf:ro
+
+
+    #      - ./master/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
     networks:
       - app-network
-
+  postgres-replica:
+    image: postgres:18
+    container_name: postgres-replica
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_USER: repuser
+      POSTGRES_PASSWORD: replica_pass
+      POSTGRES_DB: ecommerce
+      PGPASSWORD: replica_pass
+      PGDATA: /var/lib/postgresql/18/main
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./replica/replica-entrypoint.sh:/replica-entrypoint.sh:ro
+      - replica-data:/var/lib/postgresql
+    entrypoint: [ "/bin/bash", "/replica-entrypoint.sh" ]
+    networks:
+      - app-network
   redis:
     image: redis:7
     container_name: redis
@@ -88,45 +111,57 @@ services:
       QDRANT__LOG_LEVEL: INFO
     networks:
       - app-network
-
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:7.4.4
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
-    volumes:
-      - message_zookeeper_data:/var/lib/zookeeper
-    networks:
-      - app-network
+      - 22181:2181
 
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka
+    image: confluentinc/cp-kafka:7.4.4
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - 29092:29092
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-      KAFKA_DELETE_TOPIC_ENABLE: "true"
-    volumes:
-      - message_kafka_data:/var/lib/kafka/data
-    networks:
-      - app-network
+
 
 volumes:
   message_postgres_data:
   message_kafka_data:
   message_zookeeper_data:
+  replica-data:
 
 networks:
+  backend_app-network :
+    driver: bridge
   app-network:
     driver: bridge
+
+#    PS D:\Server\MessagerWeb\backend> docker exec -it postgres psql -U user -d ecommerce
+#    psql (18.0 (Debian 18.0-1.pgdg13+3))
+#    Type "help" for help.
+#
+#    ecommerce=# CREATE USER reading_user WITH PASSWORD '123';
+#    ALTER ROLE reading_user WITH REPLICATION;
+#
+#    GRANT CONNECT ON DATABASE ecommerce TO reading_user;
+#    GRANT SELECT ON ALL TABLES IN SCHEMA public TO reading_user;
+#    GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO reading_user;
+#    GRANT USAGE ON SCHEMA public TO reading_user;
+#    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO reading_user;
+#    CREATE ROLE
+#    ALTER ROLE
+#    GRANT
+#    GRANT
+#    GRANT
+#    GRANT
+#    ALTER DEFAULT PRIVILEGES
