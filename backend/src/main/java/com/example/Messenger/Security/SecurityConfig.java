@@ -61,7 +61,7 @@ public class SecurityConfig {
                     config.setAllowCredentials(true);
                     return config;
                 }))                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET,"/api/orders/confirm").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/orders/confirm","/").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/categories").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/products/top-discount").permitAll()
                         .requestMatchers(
@@ -124,16 +124,13 @@ public class SecurityConfig {
                         )
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
-
     // ✅ Load hoặc tạo KeyPair (sử dụng KeyUtil)
     @Bean
     public KeyPair keyPair() {
         return KeyUtil.loadOrCreateKeyPair();
     }
-
     @Bean
     public JwtDecoder jwtDecoder(KeyPair keyPair) {
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();

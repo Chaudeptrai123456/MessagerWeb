@@ -28,10 +28,10 @@ import java.security.PublicKey;
 import java.util.*;
 
 @RestController
-//@CrossOrigin(
-//        origins = "http://localhost:3000",
-//        allowCredentials = "true"
-//)
+@CrossOrigin(
+        origins = "http://localhost:8081",
+        allowCredentials = "true"
+)
 public class ProfileController {
     private static final String ADMIN_CODE = "CHAU_XINH_DEP_2025";
     @Autowired

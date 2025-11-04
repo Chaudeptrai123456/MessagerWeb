@@ -62,8 +62,6 @@ services:
       - message_postgres_data:/var/lib/postgresql
       - ./master/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
       - ./master/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf:ro
-
-
     #      - ./master/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
     networks:
       - app-network
@@ -165,3 +163,27 @@ networks:
 #    GRANT
 #    GRANT
 #    ALTER DEFAULT PRIVILEGES
+#  -- Xoá nếu đã tồn tại (cho chắc)
+#  DROP ROLE IF EXISTS readonly_user;
+#
+#  -- 1️⃣ Tạo user mới có quyền LOGIN
+#  CREATE ROLE readonly_user WITH LOGIN PASSWORD 'password123';
+#
+#  -- 2️⃣ Cho phép connect vào database ecommerce
+#  GRANT CONNECT ON DATABASE ecommerce TO reacdmdonly_user;
+#
+#  -- 3️⃣ Cho phép truy cập vào schema public
+#  GRANT USAGE ON SCHEMA public TO readonly_user;
+#
+#  -- 4️⃣ Cho quyền SELECT trên tất cả các bảng hiện tại trong schema public
+#  GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+#
+#  -- 5️⃣ Cho quyền SELECT trên tất cả các sequences (đề phòng có auto increment)
+#  GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO readonly_user;
+#
+#  -- 6️⃣ Tự động cấp quyền SELECT cho các bảng và sequence được tạo sau này
+#  ALTER DEFAULT PRIVILEGES IN SCHEMA public
+#  GRANT SELECT ON TABLES TO readonly_user;
+#
+#  ALTER DEFAULT PRIVILEGES IN SCHEMA public
+#  GRANT SELECT ON SEQUENCES TO readonly_user;
