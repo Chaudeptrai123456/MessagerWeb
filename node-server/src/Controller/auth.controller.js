@@ -10,6 +10,7 @@ const REDIRECT_URI = API_PATHS.AUTH.REDIRECT_URL;
 const TOKEN_ENDPOINT = `${AUTH_URL}/oauth2/token`;
 
 exports.login = (req, res) => {
+  console.log("test url " +     REDIRECT_URI)
   const authorizeUrl =
     `${AUTH_URL}/oauth2/authorize?` +
     querystring.stringify({
@@ -26,6 +27,7 @@ exports.callback = async (req, res) => {
   if (!code) return res.status(400).send("Missing authorization code");
 
   try {
+    console.log(REDIRECT_URI)
     const tokenResponse = await axios.post(
       TOKEN_ENDPOINT,
       querystring.stringify({

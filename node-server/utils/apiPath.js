@@ -8,7 +8,7 @@ const API_PATHS = {
     TOKEN_ENDPOINT: `${AUTH_URL}/oauth2/token`,
     LOGIN: `${AUTH_URL}/login`,
     USER_PROFILE: `${AUTH_URL}/userinfo`,
-    REDIRECT_URL: `${process.env.BASE_URL_CALLBACK}/login/oauth2/code/messenger`,
+    REDIRECT_URL: `${process.env.BASE_URL_CALLBACK}8081/login/oauth2/code/messenger`,
   },
 };
 

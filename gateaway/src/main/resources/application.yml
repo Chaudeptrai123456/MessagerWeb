@@ -1,0 +1,27 @@
+server:
+  port: 8090
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9999/oauth2/jwks
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: product-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/products/**
+            - id: forward-write-to-central
+              uri: http://localhost:9999
+              predicates:
+                - Path=/api/**
+            - id: login
+              uri: http://localhost:9999
+              predicates:
+                - Path=/login/**

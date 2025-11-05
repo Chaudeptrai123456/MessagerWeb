@@ -10,4 +10,4 @@ const {
 } = require("../Controller/product.controller")
 router.get("/get",auth_user,getAllProducts)
 // router.put("/uploadProfileUrl",protect, updateUserProfile)
-module.exports = router
+module.exports = router 

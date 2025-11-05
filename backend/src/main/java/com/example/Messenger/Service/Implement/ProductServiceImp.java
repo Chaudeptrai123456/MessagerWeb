@@ -126,6 +126,7 @@ public class ProductServiceImp implements ProductService {
     }
     @Override
     public Product updateProduct(String id, UpdateProduct newProduct, List<MultipartFile> images) throws IOException {
+
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
         existing.setUpdateAt(LocalDate.now());
@@ -145,6 +146,8 @@ public class ProductServiceImp implements ProductService {
         // reset images
         existing.getImages().clear();
         System.out.println(existing.getQuantity());
+        String cacheKey = "product:" + id;
+        redisService.delete(cacheKey);
         return productRepository.save(existing);
     }
     @Override
@@ -155,10 +158,8 @@ public class ProductServiceImp implements ProductService {
         if (cachedPage != null) {
             return cachedPage.toPage();
         }
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Product> products = productRepository.findAll(pageable);
-
         // Cache miss -> save to Redis
         redisService.save(cacheKey, new PageWrapper(products), PRODUCT_PAGE_TTL);
         return products;
