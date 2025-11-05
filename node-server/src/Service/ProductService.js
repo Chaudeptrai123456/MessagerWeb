@@ -1,6 +1,6 @@
 // src/Service/product.service.js
 const client = require('../Config/data.config');
-
+const redis = require("../Config/redis.config")
 class ProductService {
   async getAllCategories() {
     const result = await client.query('SELECT * FROM categories');
@@ -11,60 +11,28 @@ class ProductService {
     const result = await client.query('SELECT * FROM product WHERE id = $1', [id]);
     return result.rows[0];
   }
-  async getAllProducts(page, size) {
+async getAllProducts(page, size) {
+  const cacheKey = `products:page=${page}:size=${size}`;
+
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    console.log("🔥 Cache HIT:", cacheKey);
+    return JSON.parse(cached);
+  }
+
+  console.log("🐢 Cache MISS:", cacheKey);
+
   const offset = page * size;
   const countResult = await client.query('SELECT COUNT(*) FROM product');
   const totalItems = parseInt(countResult.rows[0].count);
+
   const result = await client.query(`
-  SELECT 
-    p.name,
-    p.description,
-    p.price,
-    p.quantity,
-    p.created_at,
-    p.update_at,
-    
-    -- Category (1-1)
-    json_build_object(
-      'name', c.name,
-      'description', c.description
-    ) AS category,
-
-    -- Features (1-n)
-    COALESCE(
-      json_agg(
-        DISTINCT jsonb_build_object(
-          'name', f.name,
-          'value', f.value
-        )
-      ) FILTER (WHERE f.id IS NOT NULL),
-      '[]'
-    ) AS features,
-
-    -- Images (1-n)
-    COALESCE(
-      json_agg(
-        DISTINCT jsonb_build_object(
-          'filename', i.filename,
-          'contentType', i.content_type,
-          'url', i.url
-        )
-      ) FILTER (WHERE i.id IS NOT NULL),
-      '[]'
-    ) AS images,
-
-    -- Discounts (1-n)
-    COALESCE(
-      json_agg(
-        DISTINCT jsonb_build_object(
-          'percentage', d.percentage,
-          'startDate', d.start_date,
-          'endDate', d.end_date
-        )
-      ) FILTER (WHERE d.id IS NOT NULL),
-      '[]'
-    ) AS discounts
-
+    SELECT 
+      p.name, p.description, p.price, p.quantity, p.created_at, p.update_at,
+      json_build_object('name', c.name, 'description', c.description) AS category,
+      COALESCE(json_agg(DISTINCT jsonb_build_object('name', f.name, 'value', f.value)) FILTER (WHERE f.id IS NOT NULL), '[]') AS features,
+      COALESCE(json_agg(DISTINCT jsonb_build_object('filename', i.filename, 'contentType', i.content_type, 'url', i.url)) FILTER (WHERE i.id IS NOT NULL), '[]') AS images,
+      COALESCE(json_agg(DISTINCT jsonb_build_object('percentage', d.percentage, 'startDate', d.start_date, 'endDate', d.end_date)) FILTER (WHERE d.id IS NOT NULL), '[]') AS discounts
     FROM product p
     LEFT JOIN category c ON p.category_id = c.id
     LEFT JOIN feature f ON p.id = f.product_id
@@ -75,14 +43,19 @@ class ProductService {
     LIMIT $1 OFFSET $2
   `, [size, offset]);
 
-
-  return {
+  const response = {
     products: result.rows,
     currentPage: page,
     totalItems,
     totalPages: Math.ceil(totalItems / size),
   };
+
+  // Cache 3 phút
+  await redis.set(cacheKey, JSON.stringify(response), { EX: 180 });
+
+  return response;
 }
+
 
 
   async searchProducts({ categoryId, minPrice, maxPrice, featureName, featureValue, page = 0, size = 10 }) {
