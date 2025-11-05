@@ -22,7 +22,7 @@ app.use("/", authRoute);
 app.get("/", (req, res) => {
   res.send(`
     <h2>Node.js OAuth2 Client</h2>
-    <a href="/auth/login">Đăng nhập với Authorization Server</a>
+    <a href="/login">Đăng nhập với Authorization Server</a>
   `);
 });
 

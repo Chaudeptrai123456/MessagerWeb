@@ -7,7 +7,6 @@ const productService = require("../Service/ProductService");
 const CLIENT_ID = "chau";
 const CLIENT_SECRET = "123";
 const REDIRECT_URI = API_PATHS.AUTH.REDIRECT_URL;
-
 const TOKEN_ENDPOINT = `${AUTH_URL}/oauth2/token`;
 
 exports.login = (req, res) => {
