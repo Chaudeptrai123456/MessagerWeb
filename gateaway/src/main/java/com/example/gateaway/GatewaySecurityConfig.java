@@ -30,12 +30,17 @@ public class GatewaySecurityConfig {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(auth -> auth
-                        .pathMatchers(HttpMethod.GET, "/public/**","/api/products/get/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/public/**","/api/products/get/**","/api/products/category","/api/products/top-discount").permitAll()
                         .anyExchange().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(grantedAuthoritiesExtractor()))
                 );
+        http.headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp
+                        .policyDirectives("default-src 'self'; connect-src 'self' http://localhost:8090")
+                )
+        );
         return http.build();
     }
     private Converter<Jwt, ? extends Mono<? extends AbstractAuthenticationToken>> grantedAuthoritiesExtractor() {

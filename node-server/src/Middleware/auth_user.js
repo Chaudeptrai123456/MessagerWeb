@@ -6,9 +6,8 @@ function auth_user(req, res, next) {
 
     if (!token) {
       console.warn("⚠️ Missing token. Redirecting to login...");
-      return res.redirect("/login");
+      return res.redirect(`/login?returnUrl=${encodeURIComponent(req.originalUrl)}`);
     }
-    console.log("test auth server " + token)
     req.accessToken = token;
     next();
   } catch (err) {

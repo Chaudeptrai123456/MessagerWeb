@@ -7,6 +7,7 @@ import com.example.Messenger.Service.Implement.OrderServiceImpl;
 import com.example.Messenger.Service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,12 +22,12 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @PostMapping("/request")
-    public ResponseEntity<String> requestOrder(@RequestBody OrderRequest request) {
+    @KafkaListener(topics = "analysis-topic", groupId = "order-service-group")
+  public void requestOrder(OrderRequest request) {
+        System.out.println("📥 Received order from: " + request.customerName());
         String token = orderService.requestOrderConfirmation(request);
-        return ResponseEntity.ok("📧 Đã gửi email xác nhận đến " + request.customerEmail());
+        System.out.println("📧 Đã gửi email xác nhận đến " + request.customerEmail());
     }
-
     @GetMapping("/confirm")
     public ResponseEntity<String> confirmOrder(@RequestParam String token) {
         Order order = orderService.confirmOrder(token);

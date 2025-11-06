@@ -5,6 +5,7 @@ import { AUTH_URL } from "./apiPath.js"; // ✅ Dùng ES import cho đồng bộ
 const axiosInstance = axios.create({
   baseURL: AUTH_URL,
   timeout: 10000,
+  withCredentials: true, // ✅ cookie sẽ tự gửi nếu tồn tại
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

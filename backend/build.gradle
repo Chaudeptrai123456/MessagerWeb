@@ -62,6 +62,10 @@ dependencies {
 	implementation 'com.nimbusds:nimbus-jose-jwt:9.37'
 	implementation 'org.postgresql:postgresql'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+// Message queue
+	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
 
 // 🧪 Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

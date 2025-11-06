@@ -28,7 +28,6 @@ public class KafkaProducerService {
         CompletableFuture<RecordMetadata> future =
                 kafkaTemplate.send(topic, key, value)
                         .thenApply(result -> result.getRecordMetadata());
-
         future.thenAccept(metadata -> {
             System.out.printf(
                     "📤 Gửi thành công [%s] tới topic '%s' (partition=%d, offset=%d)%n",

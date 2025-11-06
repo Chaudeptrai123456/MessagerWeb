@@ -1,14 +1,14 @@
 services:
-  debezium:
-    image: debezium/connect:2.7
-    environment:
-      BOOTSTRAP_SERVERS: kafka:9092
-      GROUP_ID: 1
-      CONFIG_STORAGE_TOPIC: connect_configs
-      OFFSET_STORAGE_TOPIC: connect_offsets
-      STATUS_STORAGE_TOPIC: connect_statuses
-    ports:
-      - "8088:8088"
+#  debezium:
+#    image: debezium/connect:2.7
+#    environment:
+#      BOOTSTRAP_SERVERS: kafka:9092
+#      GROUP_ID: 1
+#      CONFIG_STORAGE_TOPIC: connect_configs
+#      OFFSET_STORAGE_TOPIC: connect_offsets
+#      STATUS_STORAGE_TOPIC: connect_statuses
+#    ports:
+#      - "8088:8088"
   localai:
     image: localai/localai:v3.6.0-aio-gpu-nvidia-cuda-12
     container_name: localai
@@ -54,7 +54,17 @@ services:
       NODE_ENV: docker
     networks:
       - app-network
-
+  gateway:
+    build:
+      context: ../gateaway
+      dockerfile: Dockerfile
+    container_name: gateway
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - app-network
   backend:
     build: .
     container_name: backend

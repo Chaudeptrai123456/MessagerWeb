@@ -6,6 +6,7 @@ import com.example.Messenger.Service.RedisService;
 import com.example.Messenger.Utils.JwtTokenUtil;
 import com.example.Messenger.Utils.KeyUtil;
 import jakarta.servlet.http.Cookie;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -39,6 +40,8 @@ public class SecurityConfig {
 
     private final UserService userService;
     private final RedisService redisService;
+    @Value("frontend-url")
+    private String url;
 
     public SecurityConfig(UserService userService, RedisService redisService) {
         this.userService = userService;
@@ -60,7 +63,8 @@ public class SecurityConfig {
                     config.setAllowedHeaders(List.of("*"));
                     config.setAllowCredentials(true);
                     return config;
-                }))                .authorizeHttpRequests(auth -> auth
+                }))
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET,"/api/orders/confirm","/").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/categories").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/products/top-discount").permitAll()
