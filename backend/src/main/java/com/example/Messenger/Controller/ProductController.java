@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,7 +43,7 @@ public class ProductController {
         var list = categoryRepository.findAll();
         return new ResponseEntity<List<Category>>(list, HttpStatusCode.valueOf(200));
     }
-
+//    @KafkaListener(topics = "create-udpate-product", groupId = "order-service-group")
     @PostMapping
     public ResponseEntity<Product> createProduct(
             @RequestBody() ProductRequest req

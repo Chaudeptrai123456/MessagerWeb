@@ -4,29 +4,37 @@ package com.example.Messenger.Controller;
 import com.example.Messenger.Entity.Order;
 import com.example.Messenger.Record.OrderRequest;
 import com.example.Messenger.Service.Implement.OrderServiceImpl;
-import com.example.Messenger.Service.OrderService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.Messenger.Utils.JwtTokenUtil;
+import com.example.Messenger.Utils.KeyUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
     private final OrderServiceImpl orderService;
-
-    public OrderController(OrderServiceImpl orderService) {
+    private final JwtTokenUtil jwtTokenUtil;
+    public OrderController(OrderServiceImpl orderService, JwtTokenUtil jwtTokenUtil, JwtTokenUtil jwtTokenUtil1) {
         this.orderService = orderService;
+        this.jwtTokenUtil = jwtTokenUtil1;
     }
 
     @KafkaListener(topics = "analysis-topic", groupId = "order-service-group")
-  public void requestOrder(OrderRequest request) {
-        System.out.println("📥 Received order from: " + request.customerName());
-        String token = orderService.requestOrderConfirmation(request);
-        System.out.println("📧 Đã gửi email xác nhận đến " + request.customerEmail());
+  public void requestOrder(OrderRequest request
+    ) {
+        Map<String, Object> user = jwtTokenUtil.getUserFromToken(
+                request.token(),
+                KeyUtil.loadOrCreateKeyPair().getPublic()
+        );
+        var orderRequest =  new OrderRequest(user.get("username").toString(),user.get("email").toString(),request.address(),request.items(),request.token());
+        orderService.requestOrderConfirmation(orderRequest);
     }
     @GetMapping("/confirm")
     public ResponseEntity<String> confirmOrder(@RequestParam String token) {
@@ -60,9 +68,25 @@ public class OrderController {
         orderService.cancelOrder(id);
         return ResponseEntity.noContent().build();
     }
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Order>> getOrdersByUser(@PathVariable String userId) {
-        List<Order> orders = orderService.getOrdersByUser(userId);
+    @GetMapping("/user")
+    public ResponseEntity<List<Order>> getOrdersByUser(HttpServletRequest request) {
+        System.out.println("test get order by 8081");
+
+        // Lấy bearer token
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String token = authHeader.substring(7);
+
+        // Giải token -> lấy email (username)
+        Map<String, Object> user = jwtTokenUtil.getUserFromToken(
+                token,
+                KeyUtil.loadOrCreateKeyPair().getPublic()
+        );
+        System.out.println("test " + user.get("email"));
+        List<Order> orders = orderService.getOrdersByUser(user.get("email").toString());
         return ResponseEntity.ok(orders);
     }
+
 }

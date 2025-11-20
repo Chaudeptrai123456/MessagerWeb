@@ -93,14 +93,82 @@ async getAllProducts(page, size) {
       totalPages: Math.ceil(totalItems / size),
     };
   }
-
   async getTopDiscountProducts(limit = 7) {
-    const result = await client.query(
-      'SELECT * FROM product ORDER BY discount DESC NULLS LAST LIMIT $1',
-      [limit]
-    );
-    return result.rows;
+  const cacheKey = `top-discount-products:limit=${limit}`;
+
+  // ✅ Kiểm tra cache
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    console.log("🔥 Cache HIT:", cacheKey);
+    return JSON.parse(cached);
   }
+  console.log("🐢 Cache MISS:", cacheKey);
+  const query = `
+    SELECT 
+      p.id,
+      p.name,
+      p.description,
+      p.price,
+      p.quantity,
+      p.created_at,
+      p.update_at,
+      -- 🧩 Lấy category
+      json_build_object('name', c.name, 'description', c.description) AS category,
+      -- 🧩 Tập hợp features
+      COALESCE(
+        json_agg(DISTINCT jsonb_build_object('name', f.name, 'value', f.value))
+        FILTER (WHERE f.id IS NOT NULL),
+        '[]'
+      ) AS features,
+      -- 🧩 Tập hợp images
+      COALESCE(
+        json_agg(DISTINCT jsonb_build_object('filename', i.filename, 'contentType', i.content_type, 'url', i.url))
+        FILTER (WHERE i.id IS NOT NULL),
+        '[]'
+      ) AS images,
+      -- 🧩 Tập hợp discounts (vẫn giữ nguyên để hiển thị)
+      COALESCE(
+        json_agg(DISTINCT jsonb_build_object('percentage', d.percentage, 'startDate', d.start_date, 'endDate', d.end_date))
+        FILTER (WHERE d.id IS NOT NULL),
+        '[]'
+      ) AS discounts,
+      -- 🧠 Giá trị giảm tổng (chênh lệch)
+      COALESCE(SUM(
+        CASE 
+          WHEN CURRENT_DATE BETWEEN d.start_date AND d.end_date
+          THEN (p.price * d.percentage / 100)
+          ELSE 0
+        END
+      ), 0) AS total_discount_value,
+      -- 🧠 Giá sau giảm
+      (p.price - COALESCE(SUM(
+        CASE 
+          WHEN CURRENT_DATE BETWEEN d.start_date AND d.end_date
+          THEN (p.price * d.percentage / 100)
+          ELSE 0
+        END
+      ), 0)) AS discounted_price
+    FROM product p
+    LEFT JOIN category c ON p.category_id = c.id
+    LEFT JOIN feature f ON p.id = f.product_id
+    LEFT JOIN image i ON p.id = i.product_id
+    LEFT JOIN discount d ON p.id = d.product_id
+    GROUP BY p.id, c.id
+    ORDER BY total_discount_value DESC
+    LIMIT $1
+  `;
+  const result = await client.query(query, [limit]);
+  // ✅ Chuẩn hóa output để giống getAllProducts()
+  const response = {
+    products: result.rows,
+    totalItems: result.rowCount,
+    currentPage: 0, // vì top không phân trang
+    totalPages: 1,
+  };
+  // ✅ Cache 3 phút
+  await redis.set(cacheKey, JSON.stringify(response), { EX: 180 });
+  return response;
+}
 }
 
 module.exports = new ProductService();

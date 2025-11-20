@@ -1,14 +1,42 @@
+# uvicorn main:app --reload
 from fastapi import FastAPI,Body
-from qdrant_service import init_collections, save_product, save_order,get_all_products_from_qdrant,stringify_product,get_embedding,find_similar_products
+from qdrant_service import clear_and_recreate_orders,clear_and_recreate_products,search_with_description,recommend_products_for_user, clear_and_recreate_products,clear_and_recreate_orders,init_collections, save_product, save_order,get_all_orders_from_qdrant,get_all_products_from_qdrant,stringify_product,get_embedding,find_similar_products,delete_all_users,delete_all_products,delete_all_orders
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from qdrant_client import QdrantClient
 from pydantic import BaseModel
 from typing import List, Optional
-
 from fastapi import HTTPException
+from sync_service import sync_products_to_qdrant,sync_orders_to_qdrant
 app = FastAPI(title="AI Recommendation Service")
 client = QdrantClient(host="localhost", port=6333)
 init_collections()
+app = FastAPI()
+
+class SearchRequest(BaseModel):
+    description: str
+
+@app.post("/search")
+def handle_search(req: SearchRequest):
+    result =  search_with_description(req.description)
+    return {"result": result}
+
+@app.get("/recomments")
+def handle_recomment_product():
+    email = "phamchaugiatu123@gmail.com"
+    result = recommend_products_for_user(email)
+    return {"products": result}
+
+@app.get("/sync_postgres_qdrant")
+def sync_postgres_qdrant():
+    try:
+        clear_and_recreate_orders()
+        clear_and_recreate_products()
+        sync_products_to_qdrant()
+        sync_orders_to_qdrant()
+        return {"status": "recreated collections and synced"}
+    except Exception as e:
+        print("❌ Sync error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
 @app.post("/add_product")
 def add_product(data: dict):
     try:
@@ -18,12 +46,10 @@ def add_product(data: dict):
     except Exception as e:
         print("❌ Lỗi khi xử lý sản phẩm:", e)
         raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/add_order")
 def add_order(data: dict):
     save_order(data)
     return {"status": "Order added"}
-
 # Truy xuất product theo ID
 def get_product_by_id(product_id: str) -> dict:
     result = client.scroll(
@@ -34,7 +60,6 @@ def get_product_by_id(product_id: str) -> dict:
         limit=1
     )[0]
     return result[0].payload if result else {}
-
 # Truy xuất order theo ID
 def get_order_by_id(order_id: str) -> dict:
     result = client.scroll(
@@ -51,13 +76,20 @@ def read_product(product_id: str):
     if not product:
         return {"error": "Product not found"}
     return product
-
 @app.get("/order/{order_id}")
 def read_order(order_id: str):
     order = get_order_by_id(order_id)
     if not order:
         return {"error": "Order not found"}
     return order
+@app.get("/orders")
+def get_all_orders():
+    try:
+        order = get_all_orders_from_qdrant()
+        return order
+    except Exception as e :
+        print("Lỗi khi lấy danh sách orders: ",e)
+        raise HTTPException(status_code=500, detail=str(e))
 @app.get("/products")
 def get_all_products():
     try:
@@ -75,13 +107,10 @@ def find_similar_product(body: dict = Body(...)):
         # Lấy text từ body JSON
         query_text = body.get("text", "")
         limit = body.get("limit", 7)
-
         if not query_text:
             return {"error": "Thiếu trường 'text' trong body JSON"}
-
         results = find_similar_products(query_text, limit)
         return results
-
     except Exception as e:
         print(f"❌ Lỗi khi tìm kiếm tương tự: {e}")
         return {"error": str(e)}

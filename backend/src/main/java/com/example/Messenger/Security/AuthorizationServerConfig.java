@@ -1,12 +1,9 @@
 package com.example.Messenger.Security;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.Messenger.Entity.User;
 import com.example.Messenger.Repository.UserRepository;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,13 +19,11 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.authentication.*;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
@@ -38,7 +33,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Consumer;
@@ -101,8 +95,8 @@ public class AuthorizationServerConfig {
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .redirectUri("http://localhost:8081/login/oauth2/code/messenger")
-                .redirectUri("http://node-server:8081/login/oauth2/code/messenger")
-                .redirectUri("http://node-server:8090/login/oauth2/code/messenger")
+                .redirectUri("http://localhost:8090/login/oauth2/code/messenger")
+                .redirectUri("http://localhost:8070/login/oauth2/code/messenger")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scope("email")
@@ -195,9 +189,7 @@ public class AuthorizationServerConfig {
                     authenticationContext.getAuthentication();
             RegisteredClient registeredClient = authenticationContext.getRegisteredClient();
             String requestedRedirectUri = authorizationCodeRequestAuthentication.getRedirectUri();
-
             LOG.trace("Validating redirect_uri: {}", requestedRedirectUri);
-
             if (!registeredClient.getRedirectUris().contains(requestedRedirectUri)) {
                 LOG.warn("❌ Invalid redirect_uri: {}", requestedRedirectUri);
                 OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,

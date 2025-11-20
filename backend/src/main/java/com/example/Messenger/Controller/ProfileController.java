@@ -74,7 +74,6 @@ public class ProfileController {
         try {
             // 1️⃣ Ưu tiên token trong header, nếu không có thì lấy từ cookie
             String token = null;
-
             if (headerToken != null && headerToken.startsWith("Bearer ")) {
                 token = headerToken.substring(7); // bỏ "Bearer "
             } else if (cookieToken != null) {
@@ -90,6 +89,7 @@ public class ProfileController {
             Map<String, Object> userInfo = JwtTokenUtil.getUserFromToken(token, publicKey);
             System.out.println(userInfo.get("email"));
             Optional<User> user = Optional.of(userRepository.findUserByEmail((String) userInfo.get("email")).orElseThrow());
+
             UserProfileResponse response = new UserProfileResponse(user.get().getId(),user.get().getEmail(),user.get().getAvatar());
             System.out.println("test "  + response.getEmail());
             // 3️⃣ Trả về user info

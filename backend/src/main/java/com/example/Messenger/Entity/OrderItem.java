@@ -1,5 +1,6 @@
 package com.example.Messenger.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -20,7 +21,6 @@ public class OrderItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
-    @JsonIgnoreProperties("items")
     private Order order;
 
     public String getId() {

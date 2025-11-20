@@ -4,3 +4,9 @@ qdrant-client
 sentence-transformers
 requests
 scikit-learn==1.5.2
+numpy
+psycopg2-binary
+pydantic
+python-dotenv
+sqlalchemy
+httpx

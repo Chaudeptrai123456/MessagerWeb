@@ -1,6 +1,7 @@
 package com.example.Messenger.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 
@@ -21,12 +22,13 @@ public class Order {
     private String address;
     private String status; // PENDING, PAID, CANCELLED, SHIPPED, DONE
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<OrderItem> items = new HashSet<>();
     private Double totalAmount;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<OrderItem> items = new HashSet<>();
+
 
     public String getId() {
         return id;

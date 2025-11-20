@@ -6,6 +6,8 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.*;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -18,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+@Component
 public class JwtTokenUtil {
 
     // ✅ Sinh Access Token

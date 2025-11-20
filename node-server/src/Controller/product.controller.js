@@ -1,5 +1,58 @@
+const { API_PATHS } = require("../../utils/apiPath");
+const axiosInstance = require("../../utils/axiosInstance");
 const productService = require("../Service/ProductService");
+const recommendationEngine = async (req, res) => {
+  try {
+    const token =
+      req.cookies?.token ||
+      req.headers.authorization?.replace(/^Bearer\s+/i, "") ||
+      req.accessToken;
 
+    if (!token) {
+      return res.status(401).json({ error: "Thiếu token đăng nhập" });
+    }
+
+    const response = await axiosInstance.post(API_PATHS.RECOMMENT.GET, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const result = response.data;
+    res.status(200).json({ result });
+
+  } catch (err) {
+    console.error("❌ Lỗi gọi Python server:", err.message);
+    res.status(500).json({ message: err.message || "Lỗi gì á không biết" });
+  }
+};
+const createProduct = async(req,res)=>{
+  try {
+    const email= req.user.email
+    const productRequest = {
+        name: req.body.name,
+        description: req.body.description,
+        price:req.body.price,
+        quantity: req.body.quantity,
+        categoryId: req.categoryId,
+        images: req.body.images,
+        features: null,
+        imagesBase64:null
+
+    }
+    await producer.send({
+      topic:"create-udpate-product",
+      messages:[
+        {
+          key: 'product',
+          value: JSON.stringify("test")
+        }
+      ]
+    })
+    return res.status(200).json({"message":"test create product"})
+  }catch(err) {
+    return res.status(500).json({err})
+  }
+}
 // 🧠 Lấy tất cả categories
 const getAllCategories = async (req, res) => {
   try {
@@ -9,7 +62,6 @@ const getAllCategories = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy danh sách category", error: error.message });
   }
 };
-
 // 🧠 Lấy sản phẩm theo ID
 const getProductById = async (req, res) => {
   try {
@@ -20,7 +72,6 @@ const getProductById = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy sản phẩm", error: error.message });
   }
 };
-
 // 🧠 Lấy danh sách sản phẩm (có phân trang)
 const getAllProducts = async (req, res) => {
   try {
@@ -36,27 +87,18 @@ const getAllProducts = async (req, res) => {
 // 🧠 Tìm kiếm sản phẩm nâng cao
 const searchProducts = async (req, res) => {
   try {
-    const {
-      categoryId,
-      minPrice,
-      maxPrice,
-      featureName,
-      featureValue,
-      page = 0,
-      size = 10,
-    } = req.query;
-
-    const result = await productService.searchProducts({
-      categoryId,
-      minPrice: minPrice ? parseFloat(minPrice) : null,
-      maxPrice: maxPrice ? parseFloat(maxPrice) : null,
-      featureName,
-      featureValue,
-      page: parseInt(page),
-      size: parseInt(size),
-    });
-
-    res.status(200).json(result);
+    const token =
+      req.cookies?.token ||
+      req.headers.authorization?.replace(/^Bearer\s+/i, "") ||
+      req.accessToken;
+    const response = await axiosInstance.post(API_PATHS.SEARCH.GET, {
+      description: "test"
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });   
+    res.status(200).json(response.data);
   } catch (error) {
     res.status(500).json({ message: "Lỗi khi tìm kiếm sản phẩm", error: error.message });
   }
@@ -78,4 +120,6 @@ module.exports = {
   getAllProducts,
   searchProducts,
   getTopDiscountProducts,
+  recommendationEngine,
+  createProduct
 };

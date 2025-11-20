@@ -6,6 +6,7 @@ public record OrderRequest(
         String customerName,
         String customerEmail,
         String address,
-        List<OrderItemRequest> items
+        List<OrderItemRequest> items,
+        String token
 ) {
 }

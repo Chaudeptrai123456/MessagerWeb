@@ -9,6 +9,22 @@ services:
 #      STATUS_STORAGE_TOPIC: connect_statuses
 #    ports:
 #      - "8088:8088"
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    mem_limit: 512m
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: chau
+      MONGO_INITDB_ROOT_PASSWORD: 123
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })" ]
+      interval: 5s
+      timeout: 2s
+      retries: 60
+    volumes:
+      - mongo_data:/data/db
   localai:
     image: localai/localai:v3.6.0-aio-gpu-nvidia-cuda-12
     container_name: localai
@@ -168,6 +184,7 @@ services:
 
 
 volumes:
+  mongo_data:
   message_postgres_data:
   message_kafka_data:
   message_zookeeper_data:

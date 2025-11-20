@@ -39,7 +39,7 @@ public class GmailServiceImp {
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("phamchaugiatu123@gmail.com");
-        message.setTo("nguyentienanh2001.dev@gmail.com");
+        message.setTo(to);
         message.setSubject(subject);
         message.setText(body);
         mailSender.send(message);

@@ -1,7 +1,6 @@
 // axiosInstance.js
-import axios from "axios";
-import { AUTH_URL } from "./apiPath.js"; // ✅ Dùng ES import cho đồng bộ
-
+const { AUTH_URL } = require("../utils/apiPath")
+const axios = require("axios")
 const axiosInstance = axios.create({
   baseURL: AUTH_URL,
   timeout: 10000,
@@ -13,19 +12,20 @@ const axiosInstance = axios.create({
 });
 
 // 🧩 Request Interceptor
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const accessToken = localStorage.getItem("token");
+// axiosInstance.interceptors.request.use(
+//   (config) => {
+//     // const accessToken = localStorage.getItem("token");
+//     const accessToken = req.cookies?.token || req.headers.authorization?.replace(/^Bearer\s+/i, "");
 
-    if (accessToken) {
-      // ✅ Sửa header chính xác: "Authorization: Bearer <token>"
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
+//     if (accessToken) {
+//       // ✅ Sửa header chính xác: "Authorization: Bearer <token>"
+//       config.headers.Authorization = `Bearer ${accessToken}`;
+//     }
 
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
 
 // ⚙️ Response Interceptor
 axiosInstance.interceptors.response.use(
@@ -58,4 +58,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance;
+module.exports = axiosInstance;
