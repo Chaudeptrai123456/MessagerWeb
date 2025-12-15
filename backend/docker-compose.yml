@@ -1,0 +1,227 @@
+services:
+  backend:
+    build: .
+    container_name: backend
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - app-network
+  gateway:
+    build:
+      context: ../gateaway
+      dockerfile: Dockerfile
+    container_name: gateway
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - app-network
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+  resilence:
+    build:
+      context: ../resilience4j
+      dockerfile: Dockerfile
+    container_name: resilience-server
+    ports:
+      - "8060:8060"
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    mem_limit: 512m
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: chau
+      MONGO_INITDB_ROOT_PASSWORD: 123
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 5s
+      timeout: 2s
+      retries: 60
+    volumes:
+      - mongo_data:/data/db
+
+  localai:
+    image: localai/localai:v3.6.0-aio-gpu-nvidia-cuda-12
+    container_name: localai
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models.yaml:/models/models.yaml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [ "gpu" ]
+        limits:
+          cpus: "4.0"
+          memory: 8G
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: false
+    environment:
+      - MODEL_DOWNLOADS=true
+    networks:
+      - app-network
+
+  node-server:
+    build:
+      context: ../node-server
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres-replica
+    container_name: node-server
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      NODE_ENV: docker
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:18
+    container_name: postgres-master
+    restart: always
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: master
+      POSTGRES_PASSWORD: 123
+    ports:
+      - "5432:5432"
+    volumes:
+      - message_postgres_data:/var/lib/postgresql
+      - ./master/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
+      - ./master/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf:ro
+    networks:
+      - app-network
+
+  postgres-replica:
+    image: postgres:18
+    container_name: postgres-replica
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_USER: repuser
+      POSTGRES_PASSWORD: replica_pass
+      POSTGRES_DB: ecommerce
+      PGPASSWORD: replica_pass
+      PGDATA: /var/lib/postgresql/18/main
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./replica/replica-entrypoint.sh:/replica-entrypoint.sh:ro
+      - replica-data:/var/lib/postgresql
+    entrypoint: ["/bin/bash", "/replica-entrypoint.sh"]
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.1
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__AUTH__API_KEY: ${QDRANT_API_KEY}
+      QDRANT__SERVICE__HOST: 0.0.0.0
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__LOG_LEVEL: INFO
+    networks:
+      - app-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.4
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.4
+    container_name: kafka
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: "wK5oWMVSSl60oZKjO8vNjg=="
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  message_postgres_data:
+  message_kafka_data:
+  message_zookeeper_data:
+  replica-data:
+
+networks:
+  app-network:
+    driver: bridge

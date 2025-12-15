@@ -1,0 +1,121 @@
+server:
+  port: 8090
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 50
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 10
+    instances:
+      productServiceCb:
+        baseConfig: default
+      authServiceCb:
+        baseConfig: default
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://backend:9999/oauth2/jwks # backend
+      client:
+        registration:
+          messenger:
+            client-id: chau
+            client-secret: 123   # ⚠️ Chỉ dùng dev, prod phải bảo mật
+            scope: openid, profile, email
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/messenger"
+        provider:
+          messenger:
+           issuer-uri: http://backend:9999
+            # issuer-uri: http://localhost:9999
+
+  cloud:
+    gateway:
+      default-filters:
+        - TokenRelay
+      server:
+        webflux:
+          routes:
+            - id: oauth2-callback
+              uri: http://localhost:8090
+              predicates:
+                - Path=/login/oauth2/code/messenger
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
+            - id: product-service
+              uri: http://node-server:8081
+              predicates:
+                - Path=/api/service/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
+            - id: central-server
+#              uri: http://localhost:9999
+              uri: http://backend:9999
+              predicates:
+                - Path=/api/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: unrestricted
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    io.github.resilience4j: DEBUG
+    org.springframework.cloud.gateway: DEBUG

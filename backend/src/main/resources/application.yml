@@ -1,0 +1,184 @@
+server:
+  port: 9999
+cloudinary:
+  cloud-name: tienanh
+  api-key: 623447517299521
+  api-secret: hgJyenM0TTgYfag5APqLKUO7Uy4
+google:
+  client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
+  client-secret: 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
+  redirect-uri: http://localhost:9999/auth/google
+  scopes:
+    - https://www.googleapis.com/auth/gmail.send
+spring:
+  kafka:
+    bootstrap-servers: localhost:29092
+    topic:
+      health: health-check-topic
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: default-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: phamchaugiatu123@gmail.com
+    password: doeu iubp eyrj zvqa
+    properties:
+      mail:
+        transport:
+          protocol: smtp
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+  host: ${SPRING_REDIS_HOST:localhost}
+  port: ${SPRING_REDIS_PORT:6379}
+  lettuce:
+    pool:
+      max-active: ${SPRING_REDIS_MAX_SIZE:100}
+      max-idle: ${SPRING_REDIS_MAX_IDLE:30}
+      min-idle: ${SPRING_REDIS_MIN_IDLE:10}
+      max-wait: ${SPRING_REDIS_MAX_WAIT:2000}
+      time-between-eviction-runs: ${SPRING_REDIS_TIME_BETWEEN_EVICTION:30000}
+      min-evictable-idle-time: ${SPRING_REDIS_MIN_EVICTABLE_IDLE_TIME:60000}
+      block-when-exhausted: ${SPRING_REDIS_BLOCK_WHEN_EXHAUSTED:true}
+  timeout: 2000
+  ai:
+    vectorstore:
+      qdrant:
+        host: localhost
+        port: 6334
+        api-key: "Chaudeptrai"  # Nếu không bật xác thực thì để trống
+        collection-name: my_vectors
+        use-tls: false
+        initialize-schema: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ecommerce
+    username: master
+    password: 123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: always
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+#          local for docker
+          jwk-set-uri: http://backend:9999/oauth2/jwks
+      client:
+        registration:
+          google:
+            client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+            client-name: Google
+app:
+  auth:
+    host: localhost
+    port: 9999
+logging:
+  level:
+    org.apache.kafka: INFO
+    org.springframework.kafka: INFO
+    org.springframework.security: DEBUG
+
+---
+spring.config.activate.on-profile: docker
+server:
+  port: 9999
+  use-forward-headers: true
+app:
+  auth:
+    host: backend # 
+    port: 9999
+google:
+  client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
+  client-secret: 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
+#  redirect-uri: http://backend:9999/login/oauth2/code/google
+  redirect-uri: http://localhost:9999/login/oauth2/code/google
+  scopes:
+    - https://www.googleapis.com/auth/gmail.send
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          #          local for docker
+          jwk-set-uri: http://backend:9999/oauth2/jwks
+      client:
+        registration:
+          google:
+            client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+            redirect-uri: "http://localhost:9999/login/oauth2/code/{registrationId}"
+  kafka:
+    bootstrap-servers: kafka:9092
+    topic:
+      health: health-check-topic
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: default-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+  data:
+    redis:
+      host: redis
+      port: 6379
+  # security:
+  #   oauth2:
+  #     resourceserver:
+  #       jwt:
+  #         jwk-set-uri: http://backend:9999/oauth2/jwks
+  datasource:
+    url: jdbc:postgresql://postgres-master:5432/ecommerce
+    username: master
+    password: 123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+
+# http://localhost:9999/oauth2/authorize?response_type=code&client_id=chau&scope=openid%20profile%20email&state=RiPMOtv2G_wuZoYwlRBMggf97zHVUc1FWSMr51ek56U%3D&redirect_uri=http://localhost:8090/login/oauth2/code/messenger&nonce=fWQB9EdnPnRNAF_hC8_FLVBU_23YU8R8rUdvszdIWHk

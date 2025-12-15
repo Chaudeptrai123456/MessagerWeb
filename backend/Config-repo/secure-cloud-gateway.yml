@@ -1,0 +1,12 @@
+server.port: 9999
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/message_db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
