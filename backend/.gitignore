@@ -13,6 +13,10 @@ build/
 .settings
 .springBeans
 .sts4-cache
+.Config-repo
+.access-refresh-token-keys
+.qdrant_data
+.models
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/

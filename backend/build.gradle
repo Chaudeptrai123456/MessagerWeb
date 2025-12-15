@@ -22,6 +22,9 @@ bootRun {
 }
 
 dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.apache.commons:commons-pool2'
 
@@ -82,7 +85,10 @@ dependencies {
 
 	//	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 }
-
+tasks.withType(Test) {
+    enabled = false
+}
+//
 //tasks.named('test') {
 //	useJUnitPlatform()
 //}

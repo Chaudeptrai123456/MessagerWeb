@@ -1,0 +1,52 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+
+  # Spring Boot Gateway
+  - job_name: 'gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8090']
+
+  # Spring Auth Server
+  - job_name: 'auth-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:9999']
+#  # Java Product Service
+#  - job_name: 'product-service'
+#    metrics_path: '/actuator/prometheus'
+#    static_configs:
+#      - targets: ['localhost:8081']
+
+  # Node.js Service (custom exporter)
+  - job_name: 'node-server'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:8081']
+
+        # Spring Boot Gateway
+  - job_name: 'gateway-docker'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8090']
+
+  # Spring Auth Server
+  - job_name: 'auth-server-docker'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:9999']
+#  # Java Product Service
+#  - job_name: 'product-service'
+#    metrics_path: '/actuator/prometheus'
+#    static_configs:
+#      - targets: ['localhost:8081']
+
+  # Node.js Service (custom exporter)
+  - job_name: 'node-server-docker'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:8081']
+

@@ -13,6 +13,6 @@ const client = new Client({
 });
 
 client.connect()
-  .then(() => console.log('✅ Connected to PostgreSQL' + " host" +  process.env.DB_HOST +" "))
+  .then(() => console.log('✅ Connected to PostgreSQL' + " host " +  process.env.DB_HOST +" "))
   .catch(err => console.error('❌ DB Connection Error:'+ '✅ Connected to PostgreSQL' + " host " +  process.env.DB_HOST +":"+process.env.DB_USER, err.message));
 module.exports = client;

@@ -15,17 +15,19 @@
 //   }
 // }
 
+const { stringify } = require("querystring");
+
 // module.exports = auth_user; // ✅ Export trực tiếp function
 function auth_user(req, res, next) {
   try {
     const token =
       req.cookies?.token ||
       req.headers.authorization?.replace(/^Bearer\s+/i, "");
-    console.log("auth service token : "+token)
     if (!token) {
       console.warn("⚠️ Missing token. Redirecting to login...");
       return res.redirect(`/login?returnUrl=${encodeURIComponent(req.originalUrl)}`);
     }
+    console.log("test token  "+token)
     req.accessToken = token;
     next();
   } catch (err) {

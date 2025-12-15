@@ -25,8 +25,7 @@ public class OrderController {
         this.orderService = orderService;
         this.jwtTokenUtil = jwtTokenUtil1;
     }
-
-    @KafkaListener(topics = "analysis-topic", groupId = "order-service-group")
+  @KafkaListener(topics = "analysis-topic", groupId = "order-service-group")
   public void requestOrder(OrderRequest request
     ) {
         Map<String, Object> user = jwtTokenUtil.getUserFromToken(
@@ -71,7 +70,6 @@ public class OrderController {
     @GetMapping("/user")
     public ResponseEntity<List<Order>> getOrdersByUser(HttpServletRequest request) {
         System.out.println("test get order by 8081");
-
         // Lấy bearer token
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

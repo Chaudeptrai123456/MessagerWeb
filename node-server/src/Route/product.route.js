@@ -14,7 +14,7 @@ const {
 router.get("/get",auth_user,getAllProducts)
 router.get("/top-discount",auth_user,getTopDiscountProducts)
 router.get("/categories",getAllCategories)
-router.get("/create",auth_admin,createProduct)
+router.post("/create",auth_admin,createProduct)
 router.get("/recomment",auth_user,recommendationEngine)
 router.get("/search",auth_user,searchProducts)
 // router.put("/update")

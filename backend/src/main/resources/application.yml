@@ -87,7 +87,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:9999/oauth2/jwks
+#          local for docker
+          jwk-set-uri: http://backend:9999/oauth2/jwks
       client:
         registration:
           google:
@@ -113,22 +114,71 @@ logging:
 spring.config.activate.on-profile: docker
 server:
   port: 9999
+  use-forward-headers: true
+app:
+  auth:
+    host: backend # 
+    port: 9999
+google:
+  client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
+  client-secret: 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
+#  redirect-uri: http://backend:9999/login/oauth2/code/google
+  redirect-uri: http://localhost:9999/login/oauth2/code/google
+  scopes:
+    - https://www.googleapis.com/auth/gmail.send
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          #          local for docker
+          jwk-set-uri: http://backend:9999/oauth2/jwks
+      client:
+        registration:
+          google:
+            client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+            redirect-uri: "http://localhost:9999/login/oauth2/code/{registrationId}"
+  kafka:
+    bootstrap-servers: kafka:9092
+    topic:
+      health: health-check-topic
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: default-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
   data:
     redis:
       host: redis
       port: 6379
-#spring:
-#  datasource:
-#    url: jdbc:postgresql://postgres:5432/message_db
-#    username: user
-#    password: password
-#    driver-class-name: org.postgresql.Driver
-#  jpa:
-#    hibernate:
-#      ddl-auto: update
-#    show-sql: true
-#    properties:
-#      hibernate:
-#        format_sql: true
-#        dialect: org.hibernate.dialect.PostgreSQLDialect
+  # security:
+  #   oauth2:
+  #     resourceserver:
+  #       jwt:
+  #         jwk-set-uri: http://backend:9999/oauth2/jwks
+  datasource:
+    url: jdbc:postgresql://postgres-master:5432/ecommerce
+    username: master
+    password: 123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+
+# http://localhost:9999/oauth2/authorize?response_type=code&client_id=chau&scope=openid%20profile%20email&state=RiPMOtv2G_wuZoYwlRBMggf97zHVUc1FWSMr51ek56U%3D&redirect_uri=http://localhost:8090/login/oauth2/code/messenger&nonce=fWQB9EdnPnRNAF_hC8_FLVBU_23YU8R8rUdvszdIWHk

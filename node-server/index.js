@@ -8,10 +8,24 @@ const productRoute = require("./src/Route/product.route");
 const authRoute = require("./src/Route/auth.route");
 const orderRoute = require("./src/Route/order.route")
 require("./src/Config/data.config");
+const client = require('prom-client');
+const app = express();
+const register = new client.Registry();
+
+client.collectDefaultMetrics({ register });
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 dotenv.config();
-const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "*",      // Hoặc domain FE
+  methods: "GET,POST,PUT,DELETE",
+  credentials: true
+}));
+
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
@@ -27,8 +41,9 @@ app.get("/", (req, res) => {
     <a href="/login">Đăng nhập với Authorization Server</a>
   `);
 });
-connectKafka()
 const PORT = process.env.PORT || 8081;
-app.listen(PORT, () =>
-  console.log(`✅ Node OAuth2 client running at http://localhost:${PORT}`)
-);
+app.listen(PORT, "0.0.0.0", async () => {
+  await connectKafka();
+  console.log(`Running on 0.0.0.0:${PORT}`);
+});
+

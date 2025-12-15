@@ -1,5 +1,24 @@
 server:
   port: 8090
+url: http://localhost:9999/oauth2/jwks
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 50
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 10
+    instances:
+      productServiceCb:
+        baseConfig: default
+      authServiceCb:
+        baseConfig: default
 spring:
   security:
     oauth2:
@@ -24,49 +43,76 @@ spring:
       server:
         webflux:
           routes:
-            # ✅ OAuth2 callback (Spring xử lý, không cần TokenRelay)
             - id: oauth2-callback
               uri: http://localhost:8090
               predicates:
                 - Path=/login/oauth2/code/messenger
-            # ✅ Product Service route
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
             - id: product-service
               uri: http://localhost:8081
               predicates:
                 - Path=/api/service/**
-            # ✅ Fallback route
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
             - id: central-server
               uri: http://localhost:9999
               predicates:
                 - Path=/api/**
-logging:
-  level:
-    org.springframework.security: DEBUG  # Giúp debug OAuth2 flow
----
-spring.config.activate.on-profile: docker
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://backend:9999/oauth2/jwks
-  cloud:
-    gateway:
-      server:
-        webflux:
-          routes:
-            - id: product-service
-              uri: http://node-server:8081
-              predicates:
-                - Path=/api/service/**
-            - id: forward-write-to-central
-              uri: http://backend:9999
-              predicates:
-                - Path=/api/**
-            - id: login
-              uri: http://backend:9999
-              predicates:
-                - Path=/login/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: unrestricted
 logging:
   level:
     org.springframework.security: DEBUG
+    io.github.resilience4j: DEBUG
+    org.springframework.cloud.gateway: DEBUG

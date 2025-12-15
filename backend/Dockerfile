@@ -1,10 +1,22 @@
 # ================================
-# Stage 1: Build với Gradle
+# Stage 1: Build
 # ================================
-FROM gradle:8.14.3-jdk21-alpine AS builder
+FROM gradle:8.4.0-jdk21-alpine AS builder
 WORKDIR /app
-COPY . .
-RUN gradle bootJar --no-daemon
+
+# Copy Gradle wrapper và config trước để cache
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle settings.gradle ./
+
+# Tải dependencies (cache)
+RUN ./gradlew build -x test --no-daemon || true
+
+# Copy source code
+COPY src src
+
+# Build jar
+RUN ./gradlew bootJar --no-daemon
 
 # ================================
 # Stage 2: Runtime
@@ -12,11 +24,10 @@ RUN gradle bootJar --no-daemon
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Copy file jar đã build
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Copy thư mục keys vào /app/keys
-COPY ./src/main/resources/keys ./keys
+# Nếu cần keys thì mount volume thay vì COPY
+# COPY src/main/resources/keys ./keys
 
 EXPOSE 9999
 

@@ -24,10 +24,8 @@ exports.login = (req, res) => {
       redirect_uri: REDIRECT_URI,
       state: returnUrl, // ✅ Lưu lại trang gốc
     });
-
   return res.redirect(authorizeUrl);
 };
-
 // ===================== CALLBACK =====================
 exports.callback = async (req, res) => {
   const code = req.query.code;
@@ -49,18 +47,14 @@ exports.callback = async (req, res) => {
         }
       }
     );
-
     const { access_token } = tokenResponse.data;
-
     // // ✅ Gọi userinfo lấy profile
     // const userInfoResponse = await axios.get(USERINFO_ENDPOINT, {
     //   headers: { Authorization: `Bearer ${access_token}` }
     // });
     // console.log("test callback " + userInfoResponse)
-
     // const user = userInfoResponse.data; 
     // // Ví dụ: { sub: "...", name: "Phạm Châu", email: "xxx@gmail.com", ... }
-
     // // ✅ Lưu user vào cookie
     // res.cookie("user", JSON.stringify({
     //   username: user.name,
@@ -70,7 +64,6 @@ exports.callback = async (req, res) => {
     //   secure: false,
     //   sameSite: "lax",
     // });
-
     // ✅ Lưu token vào cookie private
     res.cookie("token", access_token, {
       httpOnly: true,
@@ -78,10 +71,8 @@ exports.callback = async (req, res) => {
       sameSite: "lax",
       domain: process.env.DOMAIN_COOKIE
     });
-
     console.log("✅ Login ok:", user.email, "→", returnUrl);
     return res.redirect(returnUrl);
-
   } catch (err) {
     console.error("❌ OAuth2 Error:", err.response?.data || err.message);
     return res.status(500).json({ error: "Token exchange failed" });

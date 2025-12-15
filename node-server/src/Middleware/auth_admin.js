@@ -10,6 +10,7 @@ function authAdmin(req, res, next) {
     // ✅ Giải mã token (không cần verify nếu chỉ decode)
     const decoded = jwt.decode(token);
     const roles = decoded?.roles || [];
+    console.log(roles)
     if (!roles.includes("ROLE_ADMIN")) {
       return res.status(403).json({ error: "Bạn không có quyền admin" });
     }

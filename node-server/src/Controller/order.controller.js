@@ -6,12 +6,14 @@ const client = require("../Config/data.config");
 const jwt = require("jsonwebtoken")
 const getAllOrderByEmail = async (req, res) => {
   try {
+    console.log("test get all order " + req.accessToken)
     const email = jwt.decode(req.accessToken).email
     if (!email) {
       return res.status(400).json({ error: "Thiếu email" });
     }
+    console.log(email)
     const query = `
-    SELECT 
+    SELECT
     o.id AS order_id,
     o.created_at,
     o.customer_name,
@@ -19,21 +21,23 @@ const getAllOrderByEmail = async (req, res) => {
     o.address,
     o.status,
     o.total_amount,
-    oi.quantity,
-    oi.price,
-      p.name AS product_name,
-      p.description AS product_description,
-      p.price,
-    i.url as images
+    oi.quantity AS item_quantity,
+    oi.price AS item_price,
+    p.name AS product_name,
+    p.description AS product_description,
+    p.price AS product_price,
+    i.url AS image_url
     FROM orders o
     JOIN order_item oi ON o.id = oi.order_id
     JOIN product p ON oi.product_id = p.id
-    JOIN image i On i.product_id = p.id
+    LEFT JOIN image i ON i.product_id = p.id     -- để không bị thiếu sản phẩm khi không có ảnh
     WHERE o.customer_email = $1
     ORDER BY o.created_at DESC;
     `;
+    
     const { rows } = await client.query(query, [email]);
     // Gom nhóm theo order_id
+    console.log(JSON.stringify(rows[0]))
     const grouped = {};
     for (const row of rows) {
       const id = row.order_id;
@@ -66,29 +70,13 @@ const getAllOrderByEmail = async (req, res) => {
     return res.status(500).json({ error: "Lỗi truy vấn", message: err.message });
   } 
 };
-module.exports = { getAllOrderByEmail };
+
 const handleMakingOrder = async (req, res) => {
   try {
     const token = req.accessToken
     const decode = jwt.decode(token);
-    const orderData = {
-      "customerName": decode.username,
-      "customerEmail": decode.sub,
-      "address": "123 Đường ABC, Quận 1, TP.HCM",
-      "items": [
-        {
-        "productId": "iphone_17_pro_plus_2025-11-01_ffebddea",
-        "quantity": 2,
-        "price": 150000
-        },
-        {
-        "productId": "samsung_galaxy_s24_ultra_2025-11-01_df848063",
-          "quantity": 1,
-          "price": 200000
-        }
-      ],
-      "token":token
-    }   
+    const orderData = req.body
+    orderData.token=token   
     // Gửi message lên Kafka
     await producer.send({
       topic: 'analysis-topic',
@@ -107,6 +95,7 @@ const handleMakingOrder = async (req, res) => {
   }
 };
 module.exports={
+  getAllOrderByEmail,
     handleMakingOrder,
     getAllOrderByEmail
 }

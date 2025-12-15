@@ -27,7 +27,6 @@ const recommendationEngine = async (req, res) => {
 };
 const createProduct = async(req,res)=>{
   try {
-    const email= req.user.email
     const productRequest = {
         name: req.body.name,
         description: req.body.description,
@@ -44,7 +43,7 @@ const createProduct = async(req,res)=>{
       messages:[
         {
           key: 'product',
-          value: JSON.stringify("test")
+          value: productRequest
         }
       ]
     })
@@ -91,8 +90,9 @@ const searchProducts = async (req, res) => {
       req.cookies?.token ||
       req.headers.authorization?.replace(/^Bearer\s+/i, "") ||
       req.accessToken;
+    let description = req.body.description
     const response = await axiosInstance.post(API_PATHS.SEARCH.GET, {
-      description: "test"
+      description: description
     }, {
       headers: {
         Authorization: `Bearer ${token}`

@@ -1,14 +1,47 @@
 services:
-#  debezium:
-#    image: debezium/connect:2.7
-#    environment:
-#      BOOTSTRAP_SERVERS: kafka:9092
-#      GROUP_ID: 1
-#      CONFIG_STORAGE_TOPIC: connect_configs
-#      OFFSET_STORAGE_TOPIC: connect_offsets
-#      STATUS_STORAGE_TOPIC: connect_statuses
-#    ports:
-#      - "8088:8088"
+  backend:
+    build: .
+    container_name: backend
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - app-network
+  gateway:
+    build:
+      context: ../gateaway
+      dockerfile: Dockerfile
+    container_name: gateway
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - app-network
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+  resilence:
+    build:
+      context: ../resilience4j
+      dockerfile: Dockerfile
+    container_name: resilience-server
+    ports:
+      - "8060:8060"
+    networks:
+      - app-network
+
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -18,23 +51,23 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: 123
     ports:
       - "27017:27017"
+    networks:
+      - app-network
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })" ]
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
       interval: 5s
       timeout: 2s
       retries: 60
     volumes:
       - mongo_data:/data/db
+
   localai:
     image: localai/localai:v3.6.0-aio-gpu-nvidia-cuda-12
     container_name: localai
     restart: unless-stopped
-    # Chạy bằng user không phải root (UID:GID -> thay 1000:1000 nếu cần)
     user: "0:0"
-    # Bind chỉ trên localhost để không expose public
     ports:
       - "8080:8080"
-    # Mount models read-only để tránh bị sửa từ trong container
     volumes:
       - ./models.yaml:/models/models.yaml
     deploy:
@@ -42,7 +75,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: [ "0" ]
+              device_ids: ["0"]
               capabilities: [ "gpu" ]
         limits:
           cpus: "4.0"
@@ -51,11 +84,12 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    read_only: false   # -> đặt true nếu chắc chắn không cần ghi filesystem
+    read_only: false
     environment:
       - MODEL_DOWNLOADS=true
     networks:
       - app-network
+
   node-server:
     build:
       context: ../node-server
@@ -70,35 +104,7 @@ services:
       NODE_ENV: docker
     networks:
       - app-network
-  gateway:
-    build:
-      context: ../gateaway
-      dockerfile: Dockerfile
-    container_name: gateway
-    ports:
-      - "8090:8090"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    networks:
-      - app-network
-  backend:
-    build: .
-    container_name: backend
-    restart: unless-stopped
-    depends_on:
-      - postgres
-      - redis
-      - kafka
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecommerce
-      SPRING_DATASOURCE_USERNAME: master
-      SPRING_DATASOURCE_PASSWORD: 123
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-    ports:
-      - "9999:9999"
-    networks:
-      - app-network
+
   postgres:
     image: postgres:18
     container_name: postgres-master
@@ -113,9 +119,9 @@ services:
       - message_postgres_data:/var/lib/postgresql
       - ./master/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
       - ./master/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf:ro
-    #      - ./master/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
     networks:
       - app-network
+
   postgres-replica:
     image: postgres:18
     container_name: postgres-replica
@@ -133,9 +139,10 @@ services:
     volumes:
       - ./replica/replica-entrypoint.sh:/replica-entrypoint.sh:ro
       - replica-data:/var/lib/postgresql
-    entrypoint: [ "/bin/bash", "/replica-entrypoint.sh" ]
+    entrypoint: ["/bin/bash", "/replica-entrypoint.sh"]
     networks:
       - app-network
+
   redis:
     image: redis:7
     container_name: redis
@@ -148,8 +155,8 @@ services:
     image: qdrant/qdrant:v1.15.1
     container_name: qdrant
     ports:
-      - "6333:6333"   # HTTP API
-      - "6334:6334"   # gRPC API
+      - "6333:6333"
+      - "6334:6334"
     volumes:
       - ./qdrant_data:/qdrant/storage
     environment:
@@ -160,28 +167,53 @@ services:
       QDRANT__LOG_LEVEL: INFO
     networks:
       - app-network
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.4
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - 22181:2181
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+    restart: unless-stopped
 
   kafka:
     image: confluentinc/cp-kafka:7.4.4
-    depends_on:
-      - zookeeper
+    container_name: kafka
     ports:
-      - 29092:29092
+      - "29092:29092"
+      - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_NUM_PARTITIONS: 3
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: "wK5oWMVSSl60oZKjO8vNjg=="
+    networks:
+      - app-network
+    restart: unless-stopped
 
 volumes:
   mongo_data:
@@ -191,51 +223,5 @@ volumes:
   replica-data:
 
 networks:
-  backend_app-network :
-    driver: bridge
   app-network:
     driver: bridge
-
-#    PS D:\Server\MessagerWeb\backend> docker exec -it postgres psql -U user -d ecommerce
-#    psql (18.0 (Debian 18.0-1.pgdg13+3))
-#    Type "help" for help.
-#
-#    ecommerce=# CREATE USER reading_user WITH PASSWORD '123';
-#    ALTER ROLE reading_user WITH REPLICATION;
-#
-#    GRANT CONNECT ON DATABASE ecommerce TO reading_user;
-#    GRANT SELECT ON ALL TABLES IN SCHEMA public TO reading_user;
-#    GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO reading_user;
-#    GRANT USAGE ON SCHEMA public TO reading_user;
-#    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO reading_user;
-#    CREATE ROLE
-#    ALTER ROLE
-#    GRANT
-#    GRANT
-#    GRANT
-#    GRANT
-#    ALTER DEFAULT PRIVILEGES
-#  -- Xoá nếu đã tồn tại (cho chắc)
-#  DROP ROLE IF EXISTS readonly_user;
-#
-#  -- 1️⃣ Tạo user mới có quyền LOGIN
-#  CREATE ROLE readonly_user WITH LOGIN PASSWORD 'password123';
-#
-#  -- 2️⃣ Cho phép connect vào database ecommerce
-#  GRANT CONNECT ON DATABASE ecommerce TO reacdmdonly_user;
-#
-#  -- 3️⃣ Cho phép truy cập vào schema public
-#  GRANT USAGE ON SCHEMA public TO readonly_user;
-#
-#  -- 4️⃣ Cho quyền SELECT trên tất cả các bảng hiện tại trong schema public
-#  GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
-#
-#  -- 5️⃣ Cho quyền SELECT trên tất cả các sequences (đề phòng có auto increment)
-#  GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO readonly_user;
-#
-#  -- 6️⃣ Tự động cấp quyền SELECT cho các bảng và sequence được tạo sau này
-#  ALTER DEFAULT PRIVILEGES IN SCHEMA public
-#  GRANT SELECT ON TABLES TO readonly_user;
-#
-#  ALTER DEFAULT PRIVILEGES IN SCHEMA public
-#  GRANT SELECT ON SEQUENCES TO readonly_user;
