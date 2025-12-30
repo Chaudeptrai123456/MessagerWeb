@@ -1,6 +1,8 @@
-# uvicorn main:app --reload
+# 
+
+
 from fastapi import FastAPI,Body
-from qdrant_service import clear_and_recreate_orders,clear_and_recreate_products,search_with_description,recommend_products_for_user, clear_and_recreate_products,clear_and_recreate_orders,init_collections, save_product, save_order,get_all_orders_from_qdrant,get_all_products_from_qdrant,stringify_product,get_embedding,find_similar_products,delete_all_users,delete_all_products,delete_all_orders
+from qdrant_service import delete_all_products,clear_and_recreate_orders,clear_and_recreate_products,search_with_description,recommend_products_for_user, clear_and_recreate_products,clear_and_recreate_orders,init_collections, save_product, save_order,get_all_orders_from_qdrant,get_all_products_from_qdrant,stringify_product,get_embedding,find_similar_products,delete_all_users,delete_all_orders
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from qdrant_client import QdrantClient
 from pydantic import BaseModel
@@ -16,15 +18,16 @@ app = FastAPI()
 
 class SearchRequest(BaseModel):
     description: str
-
+class RecommendRequest(BaseModel):
+    email: str
 @app.post("/search")
 def handle_search(req: SearchRequest):
     result =  search_with_description(req.description)
     return {"result": result}
 
-@app.get("/recomments")
-def handle_recomment_product():
-    email = "phamchaugiatu123@gmail.com"
+@app.post("/recomments")
+def handle_recomment_product(req: RecommendRequest):
+    email = req.email if req.email else "phamchaugiatu123@gmail.com"
     result = recommend_products_for_user(email)
     return {"products": result}
 
@@ -47,6 +50,8 @@ atexit.register(lambda: scheduler.shutdown())
 @app.get("/sync_postgres_qdrant")
 def sync_postgres_qdrant():
     try:
+        clear_and_recreate_products()
+        clear_and_recreate_orders()
         sync_products_to_qdrant()
         sync_orders_to_qdrant()
         return {"status": "recreated collections and synced"}

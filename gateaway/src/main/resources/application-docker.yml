@@ -44,6 +44,26 @@ spring:
       server:
         webflux:
           routes:
+            - id: logout
+              uri: http://localhost:9999
+              predicates:
+                - Path=/logout
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
             - id: oauth2-callback
               uri: http://localhost:8090
               predicates:
@@ -113,6 +133,7 @@ management:
   endpoint:
     prometheus:
       access: unrestricted
+url: http://backend:9999/oauth2/jwks
 
 logging:
   level:

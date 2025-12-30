@@ -117,7 +117,7 @@ server:
   use-forward-headers: true
 app:
   auth:
-    host: backend # 
+    host: backend #
     port: 9999
 google:
   client-id: 325019990890-qe5jj732uqji378c1ssv54ghh09dtoab.apps.googleusercontent.com

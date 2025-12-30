@@ -15,70 +15,59 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 public class KeyUtil {
 
-    private static final String KEY_DIR = "keys"; // dùng tương đối -> Docker mount /app/keys
-    private static final String PRIVATE_KEY_FILE = KEY_DIR + "/private.pem";
-    private static final String PUBLIC_KEY_FILE = KEY_DIR + "/public.pem";
+    private static final Path KEY_DIR = Paths.get("/app/keys"); // ❗ tuyệt đối cho Docker
+    private static final Path PRIVATE_KEY_FILE = KEY_DIR.resolve("private.pem");
+    private static final Path PUBLIC_KEY_FILE = KEY_DIR.resolve("public.pem");
 
-    /**
-     * Tải keyPair từ file, nếu chưa có thì tự động tạo mới.
-     */
     public static KeyPair loadOrCreateKeyPair() {
         try {
-            Path privatePath = Paths.get(PRIVATE_KEY_FILE);
-            Path publicPath = Paths.get(PUBLIC_KEY_FILE);
-
-            // Nếu chưa có, tạo thư mục và key mới
-            if (!Files.exists(privatePath) || !Files.exists(publicPath)) {
-                System.out.println("⚠️ Không tìm thấy key -> tạo mới tại thư mục: " + KEY_DIR);
-                Files.createDirectories(Paths.get(KEY_DIR));
-
-                KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-                keyGen.initialize(2048);
-                KeyPair keyPair = keyGen.generateKeyPair();
-
-                saveKeyPair(keyPair, privatePath.toString(), publicPath.toString());
-                return keyPair;
+            if (Files.exists(PRIVATE_KEY_FILE) && Files.exists(PUBLIC_KEY_FILE)) {
+                System.out.println("🔐 Load RSA key from PEM files");
+                return new KeyPair(readPublicKey(), readPrivateKey());
             }
 
-            // Nếu có sẵn, đọc lại
-            System.out.println("🔐 Đang load key từ file...");
-            PrivateKey privateKey = readPrivateKey(privatePath);
-            PublicKey publicKey = readPublicKey(publicPath);
-            return new KeyPair(publicKey, privateKey);
+            System.out.println("⚠️ RSA key not found → generating new one");
+            Files.createDirectories(KEY_DIR);
+
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            KeyPair keyPair = generator.generateKeyPair();
+
+            writePem(PRIVATE_KEY_FILE, "PRIVATE KEY", keyPair.getPrivate().getEncoded());
+            writePem(PUBLIC_KEY_FILE, "PUBLIC KEY", keyPair.getPublic().getEncoded());
+
+            return keyPair;
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Không thể load hoặc tạo keyPair", e);
+            throw new IllegalStateException("Cannot load or create RSA key pair", e);
         }
     }
 
-    /**
-     * Lưu key pair ra file.
-     */
-    public static void saveKeyPair(KeyPair keyPair, String privatePath, String publicPath) throws IOException {
-        try (FileWriter privWriter = new FileWriter(privatePath);
-             FileWriter pubWriter = new FileWriter(publicPath)) {
+    /* ================= PEM ================= */
 
-            privWriter.write(Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded()));
-            pubWriter.write(Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
-        }
+    private static void writePem(Path path, String type, byte[] content) throws IOException {
+        String pem = "-----BEGIN " + type + "-----\n"
+                + Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(content)
+                + "\n-----END " + type + "-----\n";
+        Files.writeString(path, pem);
     }
 
-    /**
-     * Đọc private key từ file.
-     */
-    public static PrivateKey readPrivateKey(Path path) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(Files.readAllBytes(path));
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+    private static byte[] readPem(Path path) throws IOException {
+        String pem = Files.readString(path);
+        return Base64.getDecoder().decode(
+                pem.replaceAll("-----BEGIN (.*)-----", "")
+                        .replaceAll("-----END (.*)-----", "")
+                        .replaceAll("\\s", "")
+        );
+    }
+
+    private static PrivateKey readPrivateKey() throws Exception {
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(readPem(PRIVATE_KEY_FILE));
         return KeyFactory.getInstance("RSA").generatePrivate(spec);
     }
 
-    /**
-     * Đọc public key từ file.
-     */
-    public static PublicKey readPublicKey(Path path) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(Files.readAllBytes(path));
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+    private static PublicKey readPublicKey() throws Exception {
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(readPem(PUBLIC_KEY_FILE));
         return KeyFactory.getInstance("RSA").generatePublic(spec);
     }
 }

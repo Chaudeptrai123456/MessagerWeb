@@ -12,6 +12,8 @@ from qdrant_client.models import (
     FieldCondition,
     MatchValue,
 )
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
 from qdrant_client import models
 import time
 from typing import Dict
@@ -406,30 +408,31 @@ def get_order_by_id(order_id: str) -> Dict:
     return result[0].payload if result else {}
 
 
-def get_all_products_from_qdrant(limit_per_page: int = 100) -> List[Dict]:
+def get_all_products_from_qdrant(limit_per_page: int = 10) -> List[Dict]:
     all_products = []
     scroll_offset = None
+
     while True:
         points, scroll_offset = client.scroll(
             collection_name=QDRANT_COLLECTION_PRODUCTS,
             limit=limit_per_page,
             offset=scroll_offset,
             with_payload=True,
-            with_vectors=False,   
+            with_vectors=False,  
         )
-        print("test get all products")
+
         if not points:
             break
+
         for point in points:
-            all_products.append(
-                {
-                    "qdrant_id": point.id,
-                    "product": point.payload,
-                    "vector_length": len(point.vector) if point.vector else None
-                }
-            )
+            all_products.append({
+                "qdrant_id": point.id,
+                "product": point.payload,
+            })
+
         if scroll_offset is None:
             break
+
     return all_products
 
 def get_all_orders_from_qdrant(limit_per_page: int = 100) -> List[Dict]:
@@ -463,8 +466,8 @@ def get_all_product_vectors_from_qdrant(limit_per_page: int = 100) -> List[List[
             collection_name=QDRANT_COLLECTION_PRODUCTS,
             limit=limit_per_page,
             offset=scroll_offset,
-            with_vectors=True,
-            with_payload=False,
+            with_vectors=False,
+            with_payload=True,
         )
         if not points:
             break
@@ -511,11 +514,8 @@ def delete_all_products():
     """
     Xóa toàn bộ products trong collection.
     """
-    client.delete(
-        collection_name=QDRANT_COLLECTION_PRODUCTS,
-        points_selector={"filter": {}}
-    )
-    print(f"🗑️ Đã xóa toàn bộ products trong collection '{QDRANT_COLLECTION_PRODUCTS}'")
+    client.delete( collection_name=QDRANT_COLLECTION_PRODUCTS, points_selector={"all": True} )
+    # print(f"🗑️ Đã xóa toàn bộ products trong collection '{QDRANT_COLLECTION_PRODUCTS}'")
 
 
 def delete_all_orders():
@@ -568,7 +568,7 @@ def recommend_products_for_user(email: str, limit: int = 10):
             ]
         ),
         with_payload=True,
-        with_vectors=False,
+        with_vectors=True,
         limit=100
     )
     # ---- FIX 1: Lấy productId đúng key ----
@@ -643,7 +643,7 @@ def recommend_products_for_user(email: str, limit: int = 10):
         if len(products) >= limit:
             break
 
-    return {"products": products}
+    return products
 def search_with_description(description: str):
     # vectorize the description 
     vector_description = get_embedding(description)
@@ -651,7 +651,7 @@ def search_with_description(description: str):
         collection_name=QDRANT_COLLECTION_PRODUCTS,   #  
         query=vector_description,
         limit=10,
-        with_vectors=True,
+        with_vectors=False,
     )
     result = []
     for product in products.points:
@@ -688,7 +688,7 @@ def recommend_with_filters(email: str, category: str | None = None, min_price: f
             limit=100,
             offset=scroll_offset,
             with_payload=True,
-            with_vectors=True,
+            with_vectors=False,
         )
         if not points:
             break

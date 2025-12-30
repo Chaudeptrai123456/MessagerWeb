@@ -1,4 +1,5 @@
 package com.example.gateaway;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,7 +15,8 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
-
+    @Value("${url}")
+    private String jwks_url;
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
@@ -24,7 +26,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/**").authenticated()
                         .anyExchange().permitAll()
                 )
-                .oauth2Login(Customizer.withDefaults())
+//                 .oauth2Login(Customizer.withDefaults())
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt ->
                                 jwt.jwtDecoder(jwtDecoder())
@@ -32,9 +34,11 @@ public class SecurityConfig {
                 );
         return http.build();
     }
-
     @Bean
     public ReactiveJwtDecoder jwtDecoder() {
-        return NimbusReactiveJwtDecoder.withJwkSetUri("http://localhost:9999/oauth2/jwks").build();
+        return NimbusReactiveJwtDecoder
+                .withJwkSetUri(jwks_url)
+                .build();
     }
+
 }

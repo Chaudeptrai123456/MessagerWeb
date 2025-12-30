@@ -112,7 +112,6 @@ def load_products_from_postgres() -> List[Dict]:
         LEFT JOIN feature f ON f.product_id = p.id
         LEFT JOIN image i ON i.product_id = p.id
         LEFT JOIN discount d ON d.product_id = p.id
-        WHERE p.update_at >= NOW() - INTERVAL '24 hours'
         ORDER BY p.update_at DESC;
     """
     cur.execute(query)
@@ -184,7 +183,6 @@ def load_orders_from_postgres():
             oi.product_id
         FROM orders o
         LEFT JOIN order_item oi ON oi.order_id = o.id
-        WHERE o.created_at >= NOW() - INTERVAL '24 hours'
         ORDER BY o.id;
     """
     cur.execute(query)
@@ -238,3 +236,4 @@ def sync_orders_to_qdrant():
     upsert_orders_bath(orders)
     print(f"✅ Đã sync {len(orders)} orders vào Qdrant collection '{QDRANT_COLLECTION_ORDERS}'")
 
+        # WHERE p.update_at >= NOW() - INTERVAL '24 hours'

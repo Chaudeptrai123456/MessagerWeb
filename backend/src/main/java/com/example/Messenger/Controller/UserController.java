@@ -5,8 +5,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,10 +20,26 @@ import java.util.Map;
 
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 public class UserController {
 
+
     @GetMapping("/info")
+    public ResponseEntity<?> userInfo(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid token");
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("email", jwt.getClaimAsString("email"));
+        response.put("username", jwt.getClaimAsString("username"));
+        response.put("roles", jwt.getClaim("roles"));
+        response.put("sub", jwt.getSubject());
+
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/oauth2/info")
     public ResponseEntity<Map<String, Object>> getUserInfo(
             HttpServletRequest request,
             HttpServletResponse response,
