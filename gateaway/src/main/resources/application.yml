@@ -20,6 +20,8 @@ resilience4j:
       authServiceCb:
         baseConfig: default
 spring:
+  application:
+    name: gateway
   security:
     oauth2:
       resourceserver:
@@ -124,10 +126,16 @@ spring:
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@userKeyResolver}"
 management:
+  tracing:
+    sampling:
+      probability: 1.0   # DEV: trace 100%
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,metrics,prometheus
   endpoint:
     prometheus:
       access: unrestricted

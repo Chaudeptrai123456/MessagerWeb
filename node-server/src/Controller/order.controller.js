@@ -21,8 +21,8 @@ const getAllOrderByEmail = async (req, res) => {
     o.address,
     o.status,
     o.total_amount,
-    oi.quantity AS item_quantity,
-    oi.price AS item_price,
+    oi.quantity AS quantity,
+    oi.price AS price,
     p.name AS product_name,
     p.description AS product_description,
     p.price AS product_price,
@@ -30,7 +30,7 @@ const getAllOrderByEmail = async (req, res) => {
     FROM orders o
     JOIN order_item oi ON o.id = oi.order_id
     JOIN product p ON oi.product_id = p.id
-    LEFT JOIN image i ON i.product_id = p.id     -- để không bị thiếu sản phẩm khi không có ảnh
+    LEFT JOIN image i ON i.product_id = p.id     
     WHERE o.customer_email = $1
     ORDER BY o.created_at DESC;
     `;

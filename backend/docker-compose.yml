@@ -1,8 +1,32 @@
 services:
+  zip-kin:
+    image: openzipkin/zipkin:latest
+    container_name: zip-kin
+    ports:
+      - "9411:9411"
+    networks:
+      - app-network 
+  ai-server:
+    build:
+      context: ../python-embedding-server
+      dockerfile: Dockerfile
+    container_name: ai-server
+    restart: always
+    ports:
+      - "8000:8000" # expose ra ngoài để debug
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - app-network
   backend:
     build: .
     container_name: backend
-    restart: unless-stopped
+    restart: always
     volumes:
       - ./keys:/app/keys
     ports:

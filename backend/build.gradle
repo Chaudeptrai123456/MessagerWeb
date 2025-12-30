@@ -22,6 +22,8 @@ bootRun {
 }
 
 dependencies {
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 
     // Google Auth (BẮT BUỘC)
     implementation 'com.google.auth:google-auth-library-oauth2-http:1.23.0'

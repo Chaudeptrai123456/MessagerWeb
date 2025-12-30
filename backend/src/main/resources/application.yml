@@ -1,3 +1,4 @@
+
 server:
   port: 9999
 cloudinary:
@@ -11,6 +12,8 @@ google:
   scopes:
     - https://www.googleapis.com/auth/gmail.send
 spring:
+  application:
+    name: central-server
   kafka:
     bootstrap-servers: localhost:29092
     topic:
@@ -109,7 +112,17 @@ logging:
     org.apache.kafka: INFO
     org.springframework.kafka: INFO
     org.springframework.security: DEBUG
-
+management:
+  tracing:
+    sampling:
+      probability: 1.0   # DEV: trace 100%
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
 ---
 spring.config.activate.on-profile: docker
 server:

@@ -23,6 +23,8 @@ ext {
 }
 
 dependencies {
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
     // 🔐 Spring Security (BẮT BUỘC)
     implementation 'org.springframework.boot:spring-boot-starter-security'
 

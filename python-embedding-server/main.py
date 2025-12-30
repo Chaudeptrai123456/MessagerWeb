@@ -1,5 +1,4 @@
-# 
-
+# uvicorn main:app --reload
 
 from fastapi import FastAPI,Body
 from qdrant_service import delete_all_products,clear_and_recreate_orders,clear_and_recreate_products,search_with_description,recommend_products_for_user, clear_and_recreate_products,clear_and_recreate_orders,init_collections, save_product, save_order,get_all_orders_from_qdrant,get_all_products_from_qdrant,stringify_product,get_embedding,find_similar_products,delete_all_users,delete_all_orders
@@ -9,12 +8,14 @@ from pydantic import BaseModel
 from typing import List, Optional
 from fastapi import HTTPException
 from sync_service import sync_products_to_qdrant,sync_orders_to_qdrant
+from tracing import setup_tracing
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 app = FastAPI(title="AI Recommendation Service")
 client = QdrantClient(host="localhost", port=6333)
 init_collections()
 app = FastAPI()
+setup_tracing(app)  
 
 class SearchRequest(BaseModel):
     description: str
