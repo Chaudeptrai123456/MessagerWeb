@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict, Optional
 import numpy as np
+import uuid
 import requests
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
@@ -12,6 +13,7 @@ from qdrant_client.models import (
     FieldCondition,
     MatchValue,
 )
+from datetime import datetime
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client import models
@@ -116,19 +118,25 @@ def init_collections():
 # ========= Embedding helpers =========
 
 def reduce_vector_dim_mean(vector: np.ndarray, target_dim: int) -> np.ndarray:
-    """
-    Giảm chiều bằng trung bình khối, dùng khi chỉ có 1 vector.
-    """
     original_dim = len(vector)
-    if original_dim <= target_dim:
-        return vector
-    block_size = original_dim // target_dim
-    reduced = []
-    for i in range(target_dim):
-        start = i * block_size
-        end = start + block_size
-        reduced.append(float(np.mean(vector[start:end])))
-    return np.array(reduced, dtype=np.float32)
+
+    if original_dim == target_dim:
+        return vector.astype(np.float32)
+
+    # Nếu nhỏ hơn → PAD
+    if original_dim < target_dim:
+        pad = np.zeros(target_dim - original_dim, dtype=np.float32)
+        return np.concatenate([vector.astype(np.float32), pad])
+
+    # Nếu lớn hơn → RESAMPLE
+    indices = np.linspace(0, original_dim, target_dim + 1, dtype=int)
+    reduced = np.array([
+        vector[indices[i]:indices[i+1]].mean()
+        for i in range(target_dim)
+    ], dtype=np.float32)
+
+    return reduced
+
 
 def get_embedding(
     text: str,
@@ -179,30 +187,30 @@ def get_embedding(
     # ---- Nếu fail 3 lần liên tục → lỗi thật ----
     raise RuntimeError("❌ LocalAI embedding failed after 3 retries")
 
-# def get_embedding(text: str, model: Optional[str] = None, target_dim: Optional[int] = None) -> List[float]:
-#     # Gọi LocalAI để lấy embedding. Tự động giảm chiều nếu dimension lớn hơn VECTOR_SIZE.
-#     model = model or EMBEDDING_MODEL
-#     target_dim = target_dim or VECTOR_SIZE
+def get_embedding(text: str, model: Optional[str] = None, target_dim: Optional[int] = None) -> List[float]:
+    # Gọi LocalAI để lấy embedding. Tự động giảm chiều nếu dimension lớn hơn VECTOR_SIZE.
+    model = model or EMBEDDING_MODEL
+    target_dim = target_dim or VECTOR_SIZE
 
-#     payload = {"input": text, "model": model}
-#     print(LOCALAI_URL)
-#     response = requests.post(LOCALAI_URL, json=payload)
-#     response.raise_for_status()
+    payload = {"input": text, "model": model}
+    print(LOCALAI_URL)
+    response = requests.post(LOCALAI_URL, json=payload)
+    response.raise_for_status()
 
-#     data = response.json()
-#     embedding = np.array(data["data"][0]["embedding"], dtype=np.float32)
-#     original_dim = len(embedding)
+    data = response.json()
+    embedding = np.array(data["data"][0]["embedding"], dtype=np.float32)
+    original_dim = len(embedding)
 
-#     if original_dim != target_dim:
-#         # Nếu model trả về dimension khác VECTOR_SIZE, giảm (hoặc giữ nguyên nếu nhỏ hơn)
-#         if original_dim > target_dim:
-#             embedding = reduce_vector_dim_mean(embedding, target_dim)
-#         else:
-#             # Nếu nhỏ hơn, pad zeros để khớp kích thước
-#             pad = np.zeros(target_dim - original_dim, dtype=np.float32)
-#             embedding = np.concatenate([embedding, pad])
+    if original_dim != target_dim:
+        # Nếu model trả về dimension khác VECTOR_SIZE, giảm (hoặc giữ nguyên nếu nhỏ hơn)
+        if original_dim > target_dim:
+            embedding = reduce_vector_dim_mean(embedding, target_dim)
+        else:
+            # Nếu nhỏ hơn, pad zeros để khớp kích thước
+            pad = np.zeros(target_dim - original_dim, dtype=np.float32)
+            embedding = np.concatenate([embedding, pad])
 
-#     return embedding.tolist()
+    return embedding.tolist()
 
 
 # ========= Stringify =========
@@ -408,31 +416,28 @@ def get_order_by_id(order_id: str) -> Dict:
     return result[0].payload if result else {}
 
 
-def get_all_products_from_qdrant(limit_per_page: int = 10) -> List[Dict]:
+def get_all_products_from_qdrant(limit_per_page: int = 1) -> List[Dict]:
     all_products = []
     scroll_offset = None
-
     while True:
         points, scroll_offset = client.scroll(
             collection_name=QDRANT_COLLECTION_PRODUCTS,
             limit=limit_per_page,
             offset=scroll_offset,
             with_payload=True,
-            with_vectors=False,  
+            with_vectors=True,  
         )
-
         if not points:
             break
-
         for point in points:
             all_products.append({
                 "qdrant_id": point.id,
                 "product": point.payload,
+                "vector": point.vector,
             })
 
         if scroll_offset is None:
             break
-
     return all_products
 
 def get_all_orders_from_qdrant(limit_per_page: int = 100) -> List[Dict]:
@@ -444,7 +449,7 @@ def get_all_orders_from_qdrant(limit_per_page: int = 100) -> List[Dict]:
             limit=limit_per_page,
             offset=scroll_offset,
             with_payload=True,
-            with_vectors=False,
+            with_vectors=True,
         )
         if not points:
             break

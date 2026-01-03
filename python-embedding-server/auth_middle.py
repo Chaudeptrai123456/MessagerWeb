@@ -1,93 +1,49 @@
-# from fastapi import FastAPI, Depends, HTTPException, status
-# from fastapi.security import OAuth2PasswordBearer
-# from jose import jwt, JWTError
-# import httpx
-
-# app = FastAPI()
-
-# # JWKS URI giống Spring
-# JWKS_URL = "http://localhost:9999/oauth2/jwks"
-# ALGORITHM = "RS256"
-
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# # Cache JWKS
-# jwks_cache = None
-
-# async def get_jwks():
-#     global jwks_cache
-#     if jwks_cache is None:
-#         async with httpx.AsyncClient() as client:
-#             resp = await client.get(JWKS_URL)
-#             resp.raise_for_status()
-#             jwks_cache = resp.json()
-#     return jwks_cache
-
-# def get_public_key(jwks, kid):
-#     for key in jwks["keys"]:
-#         if key["kid"] == kid:
-#             return jwt.algorithms.RSAAlgorithm.from_jwk(key)
-#     raise Exception("Public key not found")
-
-# async def verify_token(token: str = Depends(oauth2_scheme)):
-#     try:
-#         jwks = await get_jwks()
-#         headers = jwt.get_unverified_header(token)
-#         kid = headers["kid"]
-#         public_key = get_public_key(jwks, kid)
-
-#         payload = jwt.decode(token, public_key, algorithms=[ALGORITHM])
-#         return payload
-#     except JWTError as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail=f"Token không hợp lệ: {str(e)}"
-#         )
-
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from jose.backends.rsa_backend import RSAAlgorithm
+from jose.backends import RSAKey
 import httpx
+import time
 
-app = FastAPI()
-
-# JWKS URI giống Spring
 JWKS_URL = "http://localhost:9999/oauth2/jwks"
 ALGORITHM = "RS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Cache JWKS
 jwks_cache = None
+jwks_cached_at = 0
+JWKS_TTL = 300  # 5 phút
+
 
 async def get_jwks():
-    global jwks_cache
-    if jwks_cache is None:
+    global jwks_cache, jwks_cached_at
+    if jwks_cache is None or time.time() - jwks_cached_at > JWKS_TTL:
         async with httpx.AsyncClient() as client:
             resp = await client.get(JWKS_URL)
             resp.raise_for_status()
             jwks_cache = resp.json()
+            jwks_cached_at = time.time()
     return jwks_cache
+
 
 def get_public_key(jwks, kid: str):
     for key in jwks["keys"]:
         if key.get("kid") == kid:
-            return RSAAlgorithm.from_jwk(key)
+            return RSAKey(key, ALGORITHM)
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Public key not found for kid"
     )
-
 async def verify_token(token: str = Depends(oauth2_scheme)):
     try:
         jwks = await get_jwks()
+
         headers = jwt.get_unverified_header(token)
         kid = headers.get("kid")
         if not kid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token missing kid header"
+                detail="Token missing kid"
             )
 
         public_key = get_public_key(jwks, kid)
@@ -96,12 +52,23 @@ async def verify_token(token: str = Depends(oauth2_scheme)):
             token,
             public_key,
             algorithms=[ALGORITHM],
-            options={"verify_aud": False}  # tắt check audience nếu không cần
-        )
-        return payload
-    except JWTError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token không hợp lệ: {str(e)}"
+            options={"verify_aud": False}
         )
 
+        # ✅ normalize role / scope
+        scopes = []
+        if "scope" in payload:
+            scopes = payload["scope"].split()
+        elif "scp" in payload:
+            scopes = payload["scp"]
+        elif "roles" in payload:
+            scopes = payload["roles"]
+
+        payload["__roles__"] = scopes
+        return payload
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
