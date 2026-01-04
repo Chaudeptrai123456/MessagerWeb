@@ -46,7 +46,7 @@ public class JwtTokenUtil {
                     .build();
 
             SignedJWT signedJWT = new SignedJWT(
-                    new JWSHeader.Builder(JWSAlgorithm.RS256).type(JOSEObjectType.JWT).build(),
+                    new JWSHeader.Builder(JWSAlgorithm.RS256).type(JOSEObjectType.JWT).keyID("auth-key").build(),
                     claims
             );
 

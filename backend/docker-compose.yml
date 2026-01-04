@@ -2,6 +2,7 @@ services:
   zip-kin:
     image: openzipkin/zipkin:latest
     container_name: zip-kin
+    restart: always
     ports:
       - "9411:9411"
     networks:
@@ -257,7 +258,7 @@ volumes:
   message_kafka_data:
   message_zookeeper_data:
   replica-data:
-
+  qdrant_data:
 networks:
   app-network:
     driver: bridge

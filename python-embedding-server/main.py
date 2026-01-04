@@ -38,13 +38,11 @@ def require_admin(user=Depends(verify_token)):
 def handle_search(req: SearchRequest):
     result =  search_with_description(req.description)
     return {"result": result}
-
 @app.post("/recomments")
 def handle_recomment_product(req: RecommendRequest,user=Depends(verify_token)):
     email = req.email if req.email else "phamchaugiatu123@gmail.com"
     result = recommend_products_for_user(email)
     return {"products": result}
-
 def auto_sync():
     try:
         print("🔄 Auto sync started...")
@@ -53,14 +51,12 @@ def auto_sync():
         print("✅ Auto sync completed at 00:00")
     except Exception as e:
         print("❌ Auto sync error:", e)
-
 # Scheduler chạy lúc 00:00 mỗi ngày
 scheduler = BackgroundScheduler()
 scheduler.add_job(auto_sync, 'cron', hour=0, minute=0)
 scheduler.start()
 # Tắt scheduler khi app shutdown
 atexit.register(lambda: scheduler.shutdown())
-
 @app.get("/build") 
 def build_ecommerce_profile(user=Depends(require_admin)):
     try:

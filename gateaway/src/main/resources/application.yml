@@ -45,6 +45,7 @@ spring:
       server:
         webflux:
           routes:
+
             - id: logout
               uri: http://localhost:9999
               predicates:
@@ -125,6 +126,27 @@ spring:
                     redis-rate-limiter.burstCapacity: 20
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@userKeyResolver}"
+            - id: python-service
+              uri: http://localhost:8000
+              predicates:
+                - Path=/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCb
+                    fallbackUri: forward:/fallback/service
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, GATEWAY_TIMEOUT
+                    methods: GET
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
+
 management:
   tracing:
     sampling:

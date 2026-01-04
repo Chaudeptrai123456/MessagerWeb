@@ -1,3 +1,5 @@
+from qdrant_client.models import VectorParams, Distance
+
 from collections import defaultdict
 from collections import defaultdict
 from datetime import datetime
@@ -231,7 +233,7 @@ def get_all_user_profiles_from_qdrant(
                     limit=limit_per_page,
                     offset=scroll_offset,
                     with_payload=True,
-                    with_vectors=True,   # 🔥 QUAN TRỌNG
+                    with_vectors=False,   # 🔥 QUAN TRỌNG
                 )
                 print(f"DEBUG fetched {len(points)} points")
                 break
@@ -266,42 +268,14 @@ def delete_all_users_from_qdrant(
     batch_size: int = 100,
     sleep_sec: float = 0.2,
 ):
-    """
-    Xoá toàn bộ points trong collection users (an toàn, batch nhỏ)
-    """
-    scroll_offset = None
-    total_deleted = 0
-
-    print("🔥 Start deleting all users from Qdrant...")
-
-    while True:
-        points, scroll_offset = client.scroll(
-            collection_name=QDRANT_COLLECTION_USERS,
-            limit=batch_size,
-            offset=scroll_offset,
-            with_payload=False,
-            with_vectors=False,
-        )
-
-        if not points:
-            break
-
-        ids: List[str] = [p.id for p in points]
-
-        client.delete(
-            collection_name=QDRANT_COLLECTION_USERS,
-            points_selector=ids,
-        )
-
-        total_deleted += len(ids)
-        print(f"🗑️ Deleted {len(ids)} users (total: {total_deleted})")
-
-        time.sleep(sleep_sec)  # tránh overload
-
-        if scroll_offset is None:
-            break
-
-    print(f"✅ DONE. Total users deleted: {total_deleted}")
+    client.delete_collection(collection_name=QDRANT_COLLECTION_USERS)
+    client.create_collection(
+    collection_name=QDRANT_COLLECTION_USERS,
+    vectors_config=VectorParams(
+        size=VECTOR_SIZE,
+        distance=Distance.COSINE
+    )
+)
 def show_all_user_profiles():
     """
     In ra toàn bộ user ecommerce profiles từ Qdrant
