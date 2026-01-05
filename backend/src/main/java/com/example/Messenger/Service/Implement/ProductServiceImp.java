@@ -15,6 +15,7 @@ import com.example.Messenger.Utils.ProductIdUtil;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -68,7 +69,7 @@ public class ProductServiceImp implements ProductService {
         product.setPrice(req.price());
         product.setCreatedAt(LocalDate.now());
         product.setCategory(category);
-        product.setQuantity(0); // 🔒 inventory controlled
+        product.setQuantity(req.quantity()); // 🔒 inventory controlled
         // 3️⃣ Features (null-safe, đúng dữ liệu)
         Set<Feature> features = Optional.ofNullable(req.features())
             .orElse(Collections.emptyList())
@@ -81,7 +82,7 @@ public class ProductServiceImp implements ProductService {
                 return f;
             })
             .collect(Collectors.toSet());
-
+        product.setCreatedAt(LocalDate.now());
         product.setFeatures(features);
 
         // 4️⃣ Save product trước
@@ -125,6 +126,7 @@ public class ProductServiceImp implements ProductService {
         existing.setPrice(newProduct.getPrice() == null ? existing.getPrice() : existing.getPrice()+ newProduct.getPrice());
 //        existing.setEmbedding(newProduct.getEmbedding() == null ? existing.ge);
         existing.setQuantity(newProduct.getQuantity() == null ? existing.getQuantity(): existing.getQuantity()+ newProduct.getQuantity());
+        existing.setUpdateAt(LocalDate.now());
         System.out.println("test" + existing.getQuantity());
         // reset features
         existing.getFeatures().clear();
