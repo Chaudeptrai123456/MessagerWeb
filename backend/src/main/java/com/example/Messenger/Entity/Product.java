@@ -33,10 +33,7 @@ public class Product {
     private LocalDate updateAt;
     private String name;
     @Column(length = 2000)
-
-
     private String description;
-
     private Integer quantity;
     private Double price;
     @Column(length = 5000)

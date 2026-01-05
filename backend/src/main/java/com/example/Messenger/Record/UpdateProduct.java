@@ -13,6 +13,15 @@ public class UpdateProduct {
 
     private Integer quantity;
     private Double price;
+    private String reason;
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
 
     private Set<Feature> features = new HashSet<>();
 

@@ -12,7 +12,7 @@ import com.example.Messenger.Service.OrderService;
 import com.example.Messenger.Service.PendingOrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.example.Messenger.Entity.InventoryLog;
 import java.awt.datatransfer.SystemFlavorMap;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,12 +29,14 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
-    public OrderServiceImpl(PendingOrderService pendingOrderService, GmailServiceImp gmailServiceImp, OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository) {
+    private final InventoryService inventoryService;
+    public OrderServiceImpl(PendingOrderService pendingOrderService, GmailServiceImp gmailServiceImp, OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository, InventoryService inventoryService) {
         this.pendingOrderService = pendingOrderService;
         this.gmailServiceImp = gmailServiceImp;
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
+        this.inventoryService = inventoryService;
     }
 
     @Override
@@ -164,21 +166,20 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new RuntimeException("Product not found: " + itemReq.productId()));
 
             if (product.getQuantity() < itemReq.quantity()) {
-                throw new RuntimeException("Not enough stock for product: " + product.getName());
+                throw new RuntimeException("Not enough stock for product: " + product.getName
+                        ());
             }
 
             product.setQuantity(product.getQuantity() - itemReq.quantity());
+            this.inventoryService.sell(product.getId(), product.getQuantity(), order.getId());
             productRepository.save(product);
-
             OrderItem item = new OrderItem();
             item.setId(UUID.randomUUID().toString());
             item.setProduct(product);
             item.setQuantity(itemReq.quantity());
             item.setPrice(product.getCurrentPrice());
             item.setOrder(order); // ✅ Gắn chiều ngược
-
             items.add(item); // ✅ Gắn vào tập items
-
             totalAmount += product.getCurrentPrice() * itemReq.quantity();
         }
         order.setItems(items); // ✅ Gắn vào order

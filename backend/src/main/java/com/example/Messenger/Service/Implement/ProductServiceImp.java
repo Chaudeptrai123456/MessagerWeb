@@ -3,10 +3,7 @@ package com.example.Messenger.Service.Implement;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.example.Messenger.Entity.*;
-import com.example.Messenger.Record.DiscountRequest;
-import com.example.Messenger.Record.ImageRequest;
-import com.example.Messenger.Record.ProductRequest;
-import com.example.Messenger.Record.UpdateProduct;
+import com.example.Messenger.Record.*;
 import com.example.Messenger.Repository.CategoryRepository;
 import com.example.Messenger.Repository.DiscountRepository;
 import com.example.Messenger.Repository.ImageRepository;
@@ -39,34 +36,31 @@ public class ProductServiceImp implements ProductService {
 
     private final RedisService redisService;
     private final DiscountRepository discountRepository;
-
+    private final InventoryService inventoryService;
     private final ProductRepository productRepository;
-    private final EmbeddingService embeddingService;
     private final CategoryRepository categoryRepository;
     private final ImageRepository imageRepository;
-
     private final Cloudinary cloudinary;
 
     @Autowired
-    public ProductServiceImp(RedisService redisService, DiscountRepository discountRepository, ProductRepository productRepository,
-                             EmbeddingService embeddingService,
-                             CategoryRepository categoryRepository, ImageRepository imageRepository, Cloudinary cloudinary) {
+    public ProductServiceImp(RedisService redisService, DiscountRepository discountRepository, InventoryService inventoryService, ProductRepository productRepository,
+                             CategoryRepository categoryRepository, ImageRepository imageRepository,Cloudinary cloudinary) {
         this.redisService = redisService;
         this.discountRepository = discountRepository;
+        this.inventoryService = inventoryService;
         this.productRepository = productRepository;
-        this.embeddingService = embeddingService;
         this.categoryRepository = categoryRepository;
         this.imageRepository = imageRepository;
         this.cloudinary = cloudinary;
     }
-
+    @Transactional
     @Override
     public Product createProduct(ProductRequest req) {
-        // 1. Lấy category (nếu ko tìm thấy -> lỗi)
+        // 1️⃣ Category
         Category category = categoryRepository.findById(req.categoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+            .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        // 2. Tạo product cơ bản
+        // 2️⃣ Product (KHÔNG set quantity)
         Product product = new Product();
         product.setId(generateId(req.name()));
         product.setName(req.name());
@@ -74,42 +68,39 @@ public class ProductServiceImp implements ProductService {
         product.setPrice(req.price());
         product.setCreatedAt(LocalDate.now());
         product.setCategory(category);
-        product.setQuantity(req.quantity());
-        // 3. Map images
-//        List<Image> images = Optional.ofNullable(req.images())
-//                .orElse(Collections.emptyList())
-//                .stream()
-//                .filter(Objects::nonNull)
-//                .map(bytes -> {
-//                    Image img = new Image();
-//                    img.setData(bytes.getBytes());
-//                    img.setProduct(product);
-//                    return img;
-//                })
-//                .collect(Collectors.toList());
+        product.setQuantity(0); // 🔒 inventory controlled
+        // 3️⃣ Features (null-safe, đúng dữ liệu)
+        Set<Feature> features = Optional.ofNullable(req.features())
+            .orElse(Collections.emptyList())
+            .stream()
+            .map(value -> {
+                Feature f = new Feature();
+                f.setName("feature");
+                f.setValue(value);
+                f.setProduct(product);
+                return f;
+            })
+            .collect(Collectors.toSet());
 
-        // 4. Map features
-        List<Feature> features = Optional.ofNullable(req.features())
-                .orElse(Collections.emptyList())
-                .stream()
-                .filter(Objects::nonNull)
-                .map(fr -> {
-                    Feature f = new Feature();
-                    f.setName(fr.getClass().getName());   // 👈 sửa lại cho đúng
-                    f.setValue(fr.getClass().getName()); // 👈 không dùng getClass().getName()
-                    f.setProduct(product);
-                    return f;
-                })
-                .collect(Collectors.toList());
+        product.setFeatures(features);
 
-//        product.setImages(new HashSet<>(images));
-        product.setFeatures(new HashSet<>(features));
-
-        // 5. ✅ Lưu xuống DB trước
+        // 4️⃣ Save product trước
         Product saved = productRepository.save(product);
-        return saved;
+
+        // 5️⃣ INITIAL IMPORT (nếu có quantity)
+        if (req.quantity() > 0) {
+        inventoryService.importStock(
+                saved.getId(),
+                req.quantity(),
+                req.price(),                 // hoặc giá nhập riêng
+                "INITIAL",
+                "Initial import",
+                "INIT_" + saved.getId()      // refId (idempotent)
+        );
     }
 
+    return saved;
+}
 
     private String generateId(String name) {
         // Làm sạch tên: bỏ khoảng trắng, viết thường
@@ -126,7 +117,6 @@ public class ProductServiceImp implements ProductService {
     }
     @Override
     public Product updateProduct(String id, UpdateProduct newProduct, List<MultipartFile> images) throws IOException {
-
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
         existing.setUpdateAt(LocalDate.now());
@@ -135,8 +125,9 @@ public class ProductServiceImp implements ProductService {
         existing.setPrice(newProduct.getPrice() == null ? existing.getPrice() : existing.getPrice()+ newProduct.getPrice());
 //        existing.setEmbedding(newProduct.getEmbedding() == null ? existing.ge);
         existing.setQuantity(newProduct.getQuantity() == null ? existing.getQuantity(): existing.getQuantity()+ newProduct.getQuantity());
+        System.out.println("test" + existing.getQuantity());
         // reset features
-//        existing.getFeatures().clear();
+        existing.getFeatures().clear();
         if (newProduct.getFeatures() != null) {
             for (Feature f : newProduct.getFeatures()) {
                 f.setProduct(existing);
@@ -145,10 +136,16 @@ public class ProductServiceImp implements ProductService {
         }
         // reset images
         existing.getImages().clear();
-        System.out.println(existing.getQuantity());
         String cacheKey = "product:" + id;
         redisService.delete(cacheKey);
-        return productRepository.save(existing);
+        var result = productRepository.save(existing);
+        if (newProduct.getQuantity() != 0) {
+            inventoryService.adjustStock(
+                    existing.getId(), newProduct.getQuantity(), newProduct.getReason()
+            );
+        }
+        System.out.println(existing.getQuantity());
+        return result;
     }
     @Override
     public Page<Product> getAllProducts(int page, int size) {
