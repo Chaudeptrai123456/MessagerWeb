@@ -38,6 +38,10 @@ public class Product {
     private Double price;
     @Column(length = 5000)
     private String embedding;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Image> images = new HashSet<>();
     @ManyToOne(fetch = FetchType.LAZY)

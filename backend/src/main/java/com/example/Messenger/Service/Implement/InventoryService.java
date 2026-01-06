@@ -3,6 +3,7 @@ package com.example.Messenger.Service.Implement;
 import com.example.Messenger.Entity.InventoryLog;
 import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Entity.StockImport;
+import com.example.Messenger.Entity.WarehouseStock;
 import com.example.Messenger.Record.InventoryType;
 import com.example.Messenger.Repository.InventoryLogRepository;
 import com.example.Messenger.Repository.ProductRepository;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static com.example.Messenger.Record.InventoryType.IMPORT;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class InventoryService {
         this.logRepository = logRepository;
         this.stockImportRepository = stockImportRepository;
     }
+
     @Transactional
     public void importStock(
             String productId,
@@ -45,7 +49,7 @@ public class InventoryService {
                 .existsByProductIdAndRefIdAndType(
                         productId,
                         refId,
-                        InventoryType.IMPORT
+                        IMPORT
                 );
 
         if (exists) {
@@ -73,7 +77,7 @@ public class InventoryService {
         // 5️⃣ Ghi InventoryLog (dòng chảy kho)
         InventoryLog log = new InventoryLog();
         log.setProduct(product);
-        log.setType(InventoryType.IMPORT);
+        log.setType(IMPORT);
         log.setQuantity(quantity);          // + nhập
         log.setUnitPrice(importPrice);
         log.setRefId(refId);                // 👈 liên kết nghiệp vụ
@@ -96,7 +100,7 @@ public class InventoryService {
         boolean existed = logRepository.existsByProductAndRefIdAndType(
                 product,
                 stockImportId.toString(),
-                InventoryType.IMPORT
+                IMPORT
         );
 
         if (existed) return;
@@ -109,7 +113,7 @@ public class InventoryService {
         // 2️⃣ ghi inventory log
         logRepository.save(new InventoryLog(
                 product,
-                InventoryType.IMPORT,
+                IMPORT,
                 stockImport.getQuantity(),
                 stockImport.getImportPrice(),
                 stockImportId.toString()
@@ -129,7 +133,7 @@ public class InventoryService {
 
         logRepository.save(new InventoryLog(
                 product,
-                InventoryType.IMPORT,
+                IMPORT,
                 quantity,
                 importPrice,
                 importRef

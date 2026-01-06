@@ -1,5 +1,7 @@
 package com.example.Messenger.Entity;
 
+import com.example.Messenger.Record.Permission;
+import com.example.Messenger.Record.WarehouseRole;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -26,8 +28,57 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "authorityid")
     )
     private List<Authority> authorities;
+//    @OneToMany(
+//            mappedBy = "userWarehouseRole", // 👈 Hibernate tìm field này
+//            cascade = CascadeType.ALL,
+//            orphanRemoval = true
+//    )
+//    private Set<StaffPermission> permissions = new HashSet<>();
+    /* ====== ORDER ====== */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Order> orders = new HashSet<>();
+
+    /* ====== WAREHOUSE RELATION ====== */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserWarehouseRole> warehouseRoles = new HashSet<>();
+
+//    public boolean hasRole(String role) {
+//        return authorities.stream()
+//                .anyMatch(a -> a.getName().equals("ROLE_" + role));
+//    }
+
+    /* ---------- WAREHOUSE CHECK ---------- */
+    public boolean belongsToWarehouse(String warehouseId) {
+        return warehouseRoles.stream()
+                .anyMatch(wr -> wr.getWarehouse().getId().equals(warehouseId));
+    }
+
+    public boolean isManager(String warehouseId) {
+        return warehouseRoles.stream()
+                .anyMatch(wr ->
+                        wr.getWarehouse().getId().equals(warehouseId)
+                                && wr.getRole() == WarehouseRole.MANAGER
+                );
+    }
+
+    public boolean isStaff(String warehouseId) {
+        return warehouseRoles.stream()
+                .anyMatch(wr ->
+                        wr.getWarehouse().getId().equals(warehouseId)
+                                && wr.getRole() == WarehouseRole.STAFF
+                );
+    }
+
+    /* ---------- PERMISSION ---------- */
+    public boolean hasPermission(String warehouseId, Permission permission) {
+        return warehouseRoles.stream()
+                .filter(wr ->
+                        wr.getWarehouse().getId().equals(warehouseId)
+                                && wr.getRole() == WarehouseRole.STAFF
+                )
+                .flatMap(wr -> wr.getPermissions().stream())
+                .anyMatch(p -> p.getPermission() == permission);
+    }
     public String getId() {
         return id;
     }
@@ -82,5 +133,9 @@ public class User {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+    public boolean hasRole(String role) {
+        return authorities.stream()
+                .anyMatch(a -> a.getName().equals(role));
     }
 }

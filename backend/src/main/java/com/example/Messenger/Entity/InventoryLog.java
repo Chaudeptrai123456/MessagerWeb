@@ -21,6 +21,10 @@ public class InventoryLog {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    @ManyToOne
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private InventoryType type;

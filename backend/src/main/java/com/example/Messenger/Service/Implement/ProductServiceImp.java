@@ -4,10 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.example.Messenger.Entity.*;
 import com.example.Messenger.Record.*;
-import com.example.Messenger.Repository.CategoryRepository;
-import com.example.Messenger.Repository.DiscountRepository;
-import com.example.Messenger.Repository.ImageRepository;
-import com.example.Messenger.Repository.ProductRepository;
+import com.example.Messenger.Repository.*;
 import com.example.Messenger.Service.EmbeddingService;
 import com.example.Messenger.Service.ProductService;
 import com.example.Messenger.Service.RedisService;
@@ -34,7 +31,7 @@ public class ProductServiceImp implements ProductService {
     private static final Duration PRODUCT_TTL = Duration.ofHours(1);
     private static final Duration PRODUCT_PAGE_TTL = Duration.ofMinutes(5);
     private ProductIdUtil productIdUtil;
-
+    private final StockImportRepository stockImportRepository;
     private final RedisService redisService;
     private final DiscountRepository discountRepository;
     private final InventoryService inventoryService;
@@ -44,8 +41,9 @@ public class ProductServiceImp implements ProductService {
     private final Cloudinary cloudinary;
 
     @Autowired
-    public ProductServiceImp(RedisService redisService, DiscountRepository discountRepository, InventoryService inventoryService, ProductRepository productRepository,
-                             CategoryRepository categoryRepository, ImageRepository imageRepository,Cloudinary cloudinary) {
+    public ProductServiceImp(StockImportRepository stockImportRepository, RedisService redisService, DiscountRepository discountRepository, InventoryService inventoryService, ProductRepository productRepository,
+                             CategoryRepository categoryRepository, ImageRepository imageRepository, Cloudinary cloudinary) {
+        this.stockImportRepository = stockImportRepository;
         this.redisService = redisService;
         this.discountRepository = discountRepository;
         this.inventoryService = inventoryService;
@@ -90,7 +88,7 @@ public class ProductServiceImp implements ProductService {
 
         // 5️⃣ INITIAL IMPORT (nếu có quantity)
         if (req.quantity() > 0) {
-        inventoryService.importStock(
+            inventoryService.importStock(
                 saved.getId(),
                 req.quantity(),
                 req.price(),                 // hoặc giá nhập riêng
@@ -142,6 +140,13 @@ public class ProductServiceImp implements ProductService {
         redisService.delete(cacheKey);
         var result = productRepository.save(existing);
         if (newProduct.getQuantity() != 0) {
+            inventoryService.importStock(
+                    existing.getId(),
+                    newProduct.getQuantity(),
+                    newProduct.getPrice(),                 // hoặc giá nhập riêng
+                    String.valueOf(InventoryType.ADJUST),
+                    "import",
+                    "IMPORT_" + existing.getId());      // refId (idempotent)
             inventoryService.adjustStock(
                     existing.getId(), newProduct.getQuantity(), newProduct.getReason()
             );
