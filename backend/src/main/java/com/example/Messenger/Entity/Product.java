@@ -38,7 +38,6 @@ public class Product {
     private Double price;
     @Column(length = 5000)
     private String embedding;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id")
     private Warehouse warehouse;
