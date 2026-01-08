@@ -13,7 +13,7 @@ import java.util.Set;
 public class User {
     @Id
     private String id;
-    @Column(unique = true,nullable = false)
+    @Column(name="username")
     private String username;
     private String password;
     @Column(unique = true,nullable = false)
@@ -29,7 +29,8 @@ public class User {
     )
     private List<Authority> authorities;
 //    @OneToMany(
-//            mappedBy = "userWarehouseRole", // 👈 Hibernate tìm field này
+//            mappedBy = "userWarehouseRole", // 👈
+//            Hibernate tìm field này
 //            cascade = CascadeType.ALL,
 //            orphanRemoval = true
 //    )

@@ -18,6 +18,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -90,6 +94,11 @@ public class SecurityConfig {
                                 "/api/products/search/**"
                         ).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST,"/api/owner/**").hasRole("OWNER")
+                        .requestMatchers(HttpMethod.POST,"/api/user/verify/staff").hasAnyRole("MANAGER")
+                        .requestMatchers("/api/staff/**").hasAnyRole("MANAGER","STAFF")
+                        .requestMatchers("/api/manager/**").hasAnyRole("MANAGER")
+                        .requestMatchers("/api/admin/**").hasAnyRole("MANAGER","STAFF")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers("/api/orders").authenticated()
@@ -177,7 +186,23 @@ public class SecurityConfig {
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtDecoder jwtDecoder) {
         return new JwtAuthenticationFilter(jwtDecoder);
     }
-
+    @Bean
+    public MethodSecurityExpressionHandler methodSecurityExpressionHandler( RoleHierarchy roleHierarchy) {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
+    }
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
+        hierarchy.setHierarchy("""
+        ROLE_OWNER > ROLE_ADMIN
+        ROLE_ADMIN > ROLE_MANAGER
+        ROLE_MANAGER > ROLE_STAFF
+        ROLE_STAFF > ROLE_USER
+    """);
+        return hierarchy;
+    }
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
