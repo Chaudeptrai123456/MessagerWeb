@@ -72,6 +72,7 @@ public class SecurityConfig {
         HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
         requestCache.setCreateSessionAllowed(true);
         http
+                // font end
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowedOrigins(List.of("http://localhost:3000"));
@@ -130,25 +131,25 @@ public class SecurityConfig {
                             cookie.setMaxAge((int) Duration.ofHours(1).toSeconds());
                             cookie.setAttribute("SameSite", "Lax"); // hoặc "None" nếu cần
                             response.addCookie(cookie);
-                            response.sendRedirect("/api/user/oauth2/info");
+//                            response.sendRedirect("/api/user/oauth2/info");
 
-                            // // Gửi refresh token qua header (cookie không chứa được 2 key)
-                            // SavedRequest savedRequest = requestCache.getRequest(request, response);
-                            // if (savedRequest != null) {
-                            //     System.out.println("🔹 Saved redirect: " + savedRequest.getRedirectUrl());
-                            // } else {
-                            //     System.out.println("⚠️ No saved request found!");
-                            // }
-                            // String redirectUrl;
-                            // if (savedRequest != null) {
-                            //     redirectUrl = savedRequest.getRedirectUrl();
-                            //     // Xóa saved request để tránh bị redirect lặp
-                            //     requestCache.removeRequest(request, response);
-                            // } else {
-                            //     redirectUrl = "http://localhost:3000"; // fallback mặc định
-                            // }
-                            // // Redirect tới URL cũ hoặc fallback
-                            // response.sendRedirect(redirectUrl);
+                             // Gửi refresh token qua header (cookie không chứa được 2 key)
+                             SavedRequest savedRequest = requestCache.getRequest(request, response);
+                             if (savedRequest != null) {
+                                 System.out.println("🔹 Saved redirect: " + savedRequest.getRedirectUrl());
+                             } else {
+                                 System.out.println("⚠️ No saved request found!");
+                             }
+                             String redirectUrl;
+                             if (savedRequest != null) {
+                                 redirectUrl = savedRequest.getRedirectUrl();
+                                 // Xóa saved request để tránh bị redirect lặp
+                                 requestCache.removeRequest(request, response);
+                             } else {
+                                 redirectUrl = "http://localhost:3000"; // fallback mặc định
+                             }
+                             // Redirect tới URL cũ hoặc fallback
+                             response.sendRedirect(redirectUrl);
                         })
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -166,7 +167,7 @@ public class SecurityConfig {
 
         RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
                 .privateKey((RSAPrivateKey) keyPair.getPrivate())
-                .keyID("auth-key") // ❗ CỐ ĐỊNH
+                .keyID("auth-key") //
                 .build();
 
         return new ImmutableJWKSet<>(new JWKSet(rsaKey));

@@ -1,10 +1,10 @@
 package com.example.Messenger.Controller.Owner;
 
-
 import com.example.Messenger.Record.UserResponse;
 import com.example.Messenger.Record.WarehouseRequest;
 import com.example.Messenger.Record.assignManagerToWarehouseRequest;
 import com.example.Messenger.Repository.UserRepository;
+import com.example.Messenger.Service.Implement.ProductServiceImp;
 import com.example.Messenger.Service.Implement.UserService;
 import com.example.Messenger.Service.Implement.WarehouseAssignmentService;
 import com.example.Messenger.Service.Implement.WarehouseEconomicService;
@@ -15,21 +15,22 @@ import org.springframework.web.bind.annotation.*;
 import com.example.Messenger.Entity.Warehouse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
 import java.util.Optional;
 
-@RestController()
-@RequestMapping("/api/owner/")
+@RestController
+@RequestMapping("/api/owner")
 public class WarehouseController {
     private final UserService userService;
     private final WarehouseEconomicService warehouseEconomicService;
     private final WarehouseAssignmentService warehouseAssignmentService;
+    private final ProductServiceImp productServiceImp;
     private final UserRepository userRepository;
     @Autowired
-    public WarehouseController(UserService userService, WarehouseEconomicService warehouseEconomicService, WarehouseAssignmentService warehouseAssignmentService, UserRepository userRepository) {
+    public WarehouseController(UserService userService, WarehouseEconomicService warehouseEconomicService, WarehouseAssignmentService warehouseAssignmentService, ProductServiceImp productServiceImp, UserRepository userRepository) {
         this.userService = userService;
         this.warehouseEconomicService = warehouseEconomicService;
         this.warehouseAssignmentService = warehouseAssignmentService;
+        this.productServiceImp = productServiceImp;
         this.userRepository = userRepository;
     }
     @GetMapping("/user")
@@ -52,6 +53,10 @@ public class WarehouseController {
     @GetMapping("/warehouse/get")
     public ResponseEntity<?> getAllWareHouse() {
         return ResponseEntity.of(Optional.ofNullable(warehouseAssignmentService.getAllWarehouses()));
+    }
+    @GetMapping("/product/quantity")
+    public ResponseEntity<?> getQuantityInStock() {
+        return ResponseEntity.of(Optional.ofNullable(productServiceImp.getAllProductStock()));
     }
 
     @PostMapping("/warehouse/assignment")

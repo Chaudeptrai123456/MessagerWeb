@@ -48,4 +48,25 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStock,S
             @Param("warehouse") Warehouse warehouse,
             @Param("product") Product product
     );
+    @Query("""
+    SELECT ws
+    FROM WarehouseStock ws
+    JOIN FETCH ws.product
+    JOIN FETCH ws.warehouse
+""")
+    List<WarehouseStock> findAllWithProductAndWarehouse();
+    @Query("""
+        SELECT ws
+        FROM WarehouseStock ws
+        JOIN FETCH ws.warehouse
+        WHERE ws.product.id = :productId
+    """)
+    List<WarehouseStock> findAllByProductId(@Param("productId") String productId);
+
+    @Query("""
+        SELECT COALESCE(SUM(ws.quantity), 0)
+        FROM WarehouseStock ws
+        WHERE ws.product.id = :productId
+    """)
+    int sumQuantityByProductId(@Param("productId") String productId);
 }

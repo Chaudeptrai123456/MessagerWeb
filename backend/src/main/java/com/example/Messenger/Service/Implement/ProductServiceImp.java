@@ -37,18 +37,20 @@ public class ProductServiceImp implements ProductService {
     private final InventoryService inventoryService;
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final WarehouseStockRepository warehouseStockRepository;
     private final ImageRepository imageRepository;
     private final Cloudinary cloudinary;
 
     @Autowired
     public ProductServiceImp(StockImportRepository stockImportRepository, RedisService redisService, DiscountRepository discountRepository, InventoryService inventoryService, ProductRepository productRepository,
-                             CategoryRepository categoryRepository, ImageRepository imageRepository, Cloudinary cloudinary) {
+                             CategoryRepository categoryRepository, WarehouseStockRepository warehouseStockRepository, ImageRepository imageRepository, Cloudinary cloudinary) {
         this.stockImportRepository = stockImportRepository;
         this.redisService = redisService;
         this.discountRepository = discountRepository;
         this.inventoryService = inventoryService;
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.warehouseStockRepository = warehouseStockRepository;
         this.imageRepository = imageRepository;
         this.cloudinary = cloudinary;
     }
@@ -293,7 +295,48 @@ public class ProductServiceImp implements ProductService {
         redisService.saveList(cacheKey, new PageWrapper<>(result));
         return result;
     }
+//    @Transactional()
+//    public List<ProductStockDTO> getProductStockByWarehouse(String productId) {
+//
+//        List<WarehouseStock> stocks =
+//                warehouseStockRepository.findAllByProductId(productId);
+//
+//        if (stocks.isEmpty()) {
+//            throw new RuntimeException("No stock found for product: " + productId);
+//        }
+//
+//        return stocks.stream()
+//                .map(ws -> new ProductStockDTO(
+//                        ws.getWarehouse().getId(),
+//                        ws.getWarehouse().getName(),
+//                        ws.getQuantity()
+//                ))
+//                .toList();
+//    }
+    @Transactional()
+    public List<ProductStockDTO> getAllProductStock() {
 
+        List<WarehouseStock> stocks =
+                warehouseStockRepository.findAllWithProductAndWarehouse();
+
+        if (stocks.isEmpty()) {
+            return List.of(); // 👈 không throw nữa cho API dễ xài
+        }
+
+        return stocks.stream()
+                .map(ws -> new ProductStockDTO(
+                        ws.getProduct().getId(),
+                        ws.getProduct().getName(),
+                        ws.getWarehouse().getId(),
+                        ws.getWarehouse().getName(),
+                        ws.getQuantity()
+                ))
+                .toList();
+    }
+    @Transactional()
+    public int getTotalProductQuantity(String productId) {
+        return warehouseStockRepository.sumQuantityByProductId(productId);
+    }
     @Override
     public List<Product> getTopDiscountProducts(int limits) {
         Pageable pageable = PageRequest.of(0, limits);
