@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { UserContext } from "@/context/UserContext";
 import { apiClient } from "@/utils/axios.client";
 import { API_PATHS } from "@/utils/apiPaths";
-
+import AuthLoading from "@/components/loading/AuthLoading";
 const backendApi = apiClient("BACKEND");
 
 export default function LoginPage() {
@@ -57,7 +57,7 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full bg-black text-white py-2 rounded disabled:opacity-50"
         >
-          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+          {loading ? <AuthLoading /> : "Đăng nhập"}
         </button>
       </div>
     </div>

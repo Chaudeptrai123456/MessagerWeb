@@ -5,7 +5,7 @@ import { apiClient } from "@/utils/axios.client";
 import { useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UserContext } from "@/context/UserContext";
-
+import RequireRole from "@/components/auth/RequireRole";
 const backendApi = apiClient("BACKEND");
 
 export default function LoginPage() {
@@ -14,5 +14,7 @@ export default function LoginPage() {
 
   const { user, loading, refetchUser } = ctx;
   console.log("User data:", user);
-  return <div>Manager</div>;
+  return <RequireRole role="ROLE_MANAGER">
+        Manager 
+      </RequireRole>;
 }

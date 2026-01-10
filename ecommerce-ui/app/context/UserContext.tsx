@@ -28,7 +28,7 @@ const backendApi = apiClient("BACKEND");
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   function getCookie(name: string): string | undefined {
     if (typeof document === "undefined") return undefined; // tránh lỗi khi SSR
     const value = `; ${document.cookie}`;
