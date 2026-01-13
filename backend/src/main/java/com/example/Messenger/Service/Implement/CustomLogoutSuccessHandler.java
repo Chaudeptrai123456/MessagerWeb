@@ -12,17 +12,22 @@ import java.io.IOException;
 public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
 
     @Override
-    public void onLogoutSuccess(HttpServletRequest request,
-                                HttpServletResponse response,
-                                Authentication authentication) throws IOException {
+    public void onLogoutSuccess(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication
+    ) throws IOException {
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
 
         response.getWriter().write("""
-            {
-              "message": "Logout successful"
-            }
+        {
+          "success": true,
+          "message": "Logout successful"
+        }
         """);
+        response.sendRedirect("http://localhost:3000/login");
     }
 }

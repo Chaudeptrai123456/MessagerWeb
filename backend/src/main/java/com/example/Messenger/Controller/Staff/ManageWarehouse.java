@@ -6,12 +6,10 @@ import com.example.Messenger.Service.Implement.UserService;
 import com.example.Messenger.Service.Implement.WarehouseEconomicService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-@RestController("/api/staff")
+@RestController()
+@RequestMapping("/api/staff")
 public class ManageWarehouse {
     private final WarehouseEconomicService warehouseEconomicService;
     private final SupplyChainService supplyChainService;

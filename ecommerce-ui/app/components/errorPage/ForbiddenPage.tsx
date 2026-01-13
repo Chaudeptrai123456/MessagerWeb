@@ -17,7 +17,6 @@ export default function ForbiddenPage() {
         <h1 className="mb-2 text-center text-2xl font-semibold text-gray-800">
           Truy cập bị từ chối
         </h1>
-
         {/* Description */}
         <p className="mb-6 text-center text-gray-600">
           Bạn không có quyền truy cập vào trang này.

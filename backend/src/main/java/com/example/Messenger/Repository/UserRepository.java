@@ -21,4 +21,6 @@ public interface UserRepository extends JpaRepository<User, String> {
             @Param("roleName") String roleName,
             Pageable pageable
     );
+
+    Optional<User> findByEmail(String email);
 }

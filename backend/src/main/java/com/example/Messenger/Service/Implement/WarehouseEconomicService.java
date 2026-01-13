@@ -1,9 +1,11 @@
 package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Warehouse;
+import com.example.Messenger.Record.DashboardMetricsDTO;
 import com.example.Messenger.Record.WarehouseEconomicDTO;
 import com.example.Messenger.Record.WarehouseRequest;
 import com.example.Messenger.Repository.InventoryLogRepository;
+import com.example.Messenger.Repository.OrderRepository;
 import com.example.Messenger.Repository.StockImportRepository;
 import com.example.Messenger.Repository.WarehouseRepository;
 import jakarta.transaction.Transactional;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,11 +25,13 @@ public class WarehouseEconomicService {
     private final InventoryLogRepository inventoryLogRepository;
     private final StockImportRepository stockImportRepository;
     private final WarehouseRepository warehouseRepository;
+    private final OrderRepository orderRepository;
     @Autowired
-    public WarehouseEconomicService(InventoryLogRepository inventoryLogRepository, StockImportRepository stockImportRepository, WarehouseRepository warehouseRepository) {
+    public WarehouseEconomicService(InventoryLogRepository inventoryLogRepository, StockImportRepository stockImportRepository, WarehouseRepository warehouseRepository, OrderRepository orderRepository) {
         this.inventoryLogRepository = inventoryLogRepository;
         this.stockImportRepository = stockImportRepository;
         this.warehouseRepository = warehouseRepository;
+        this.orderRepository = orderRepository;
     }
     public Warehouse createWarehouse(WarehouseRequest req) {
         return warehouseRepository.findByName(req.name())
@@ -38,7 +43,9 @@ public class WarehouseEconomicService {
                     return warehouseRepository.save(warehouse);
                 });
     }
-
+    public Optional<DashboardMetricsDTO> getDashboardMetrics() {
+        return orderRepository.findWarehousesWithEnoughStock();
+    }
     public WarehouseEconomicDTO calculateWarehouseProfit(
             String warehouseId,
             LocalDateTime from,

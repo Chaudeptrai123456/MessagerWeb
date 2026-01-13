@@ -5,7 +5,10 @@ export const API_PATHS = {
     GET_PROFILE: "/api/user/info",
     LOGOUT: "/logout",
   },
-
+  WAREHOUSE: {
+    GET_ALL: "/api/owner/warehouse/get",
+    ECOMMERCE: "/api/owner/dashboard/ecommerce"
+  },
   USER: {
     GET_ALL_USERS: "/api/users",
     GET_USER_BY_ID: (userId: string) => `/api/users/${userId}`,

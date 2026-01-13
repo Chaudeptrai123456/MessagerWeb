@@ -5,6 +5,7 @@ import com.example.Messenger.Entity.StockImport;
 import com.example.Messenger.Entity.Warehouse;
 import com.example.Messenger.Entity.WarehouseStock;
 import com.example.Messenger.Repository.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional()
 public class SupplyChainService {
 
     private final WarehouseRepository warehouseRepository;
@@ -68,7 +70,7 @@ public class SupplyChainService {
                     WarehouseStock ws = new WarehouseStock();
                     ws.setWarehouse(warehouse);
                     ws.setProduct(product);
-                    ws.setQuantity(0);
+                    ws.setQuantity(quantity);
                     return ws;
                 });
 

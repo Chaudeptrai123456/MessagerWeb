@@ -48,7 +48,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         },
       });
       console.log("Fetched user:", res.data);
-      setUser(res.data);
+      const result = {
+        ...res.data,
+        token: token,
+      };
+      setUser(result);
     } catch {
       setUser(null);
     } finally {
@@ -65,11 +69,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const clearUser = useCallback(async () => {
     try {
-      await backendApi.post(
-        API_PATHS.AUTH.LOGOUT,
-        {},
-        { withCredentials: true }
-      );
+      window.location.href = "http://localhost:9999/logout";
     } catch {}
     setUser(null);
   }, []);

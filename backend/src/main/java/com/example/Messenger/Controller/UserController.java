@@ -1,13 +1,17 @@
 package com.example.Messenger.Controller;
 
+import com.example.Messenger.Entity.User;
+import com.example.Messenger.Repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -23,6 +27,11 @@ import java.util.Map;
 @RequestMapping("/api/user")
 public class UserController {
 
+    private final   UserRepository userRepository;
+    @Autowired
+    public UserController(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @GetMapping("/info")
     public ResponseEntity<?> userInfo(@AuthenticationPrincipal Jwt jwt) {
@@ -32,11 +41,14 @@ public class UserController {
                     .body("Invalid token");
         }
         Map<String, Object> response = new HashMap<>();
+        User user = this.userRepository.findUserByEmail(jwt.getClaimAsString("email")).orElseThrow(
+                () -> new UsernameNotFoundException("User not found with email: " + jwt.getClaimAsString("email")
+        ));;
         response.put("email", jwt.getClaimAsString("email"));
         response.put("username", jwt.getClaimAsString("username"));
         response.put("roles", jwt.getClaim("roles"));
         response.put("sub", jwt.getSubject());
-
+        response.put("avatar",user.getAvatar());
         return ResponseEntity.ok(response);
     }
     @GetMapping("/oauth2/info")
