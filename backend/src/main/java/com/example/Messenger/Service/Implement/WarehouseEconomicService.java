@@ -2,6 +2,7 @@ package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Warehouse;
 import com.example.Messenger.Record.DashboardMetricsDTO;
+import com.example.Messenger.Record.ProductInStock;
 import com.example.Messenger.Record.WarehouseEconomicDTO;
 import com.example.Messenger.Record.WarehouseRequest;
 import com.example.Messenger.Repository.InventoryLogRepository;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +34,9 @@ public class WarehouseEconomicService {
         this.stockImportRepository = stockImportRepository;
         this.warehouseRepository = warehouseRepository;
         this.orderRepository = orderRepository;
+    }
+    public List<ProductInStock> getAllProductInAllWarehouse(){
+        return this.warehouseRepository.findAllProductInWareHouse();
     }
     public Warehouse createWarehouse(WarehouseRequest req) {
         return warehouseRepository.findByName(req.name())

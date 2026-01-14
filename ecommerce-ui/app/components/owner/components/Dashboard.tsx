@@ -64,14 +64,27 @@ const KPICard: React.FC<{
     </div>
   </div>
 );
+type DashboardData = {
+  totalRevenue: number;
+  totalCost: number;
+  profitMargin: number;
+  totalOrders: number;
+  totalCustomers: number;
+  orderFrequency: number;
+  avgOrderValue: number;
+};
 
 const App: React.FC = () => {
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [view, setView] = useState<"dashboard" | "backend">("dashboard");
+  const [data, setData ] = useState<DashboardData | null>(null);
   const ctx = useContext(UserContext);
   if (!ctx) return null;
   const { user, loading } = ctx;
+  const formatNumber = (value: number) =>
+    new Intl.NumberFormat("vi-VN").format(value);
+
   const fetchWarehouses = async () => {
     try {
       const token = user.token;
@@ -79,10 +92,13 @@ const App: React.FC = () => {
         headers: { Authorization: token ? `Bearer ${token}` : "" },
       });
       console.log("Fetched warehouses:", res.data);
+      setData(res.data);
     } catch (err) {
       console.error("Error fetching warehouses:", err);
     }
   };
+  const formatPercent = (value: number, digits = 2) =>
+    `${(value * 100).toFixed(digits)}%`;
   useEffect(() => {
     fetchWarehouses();
   }, [user.token]);
@@ -188,21 +204,21 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <KPICard
                 title="Total Revenue"
-                value={10}
+                value={formatNumber(data ? data.totalRevenue : 0)}
                 icon={<DollarSign />}
                 color="indigo"
               />
               <KPICard
                 title="Order Frequency"
-                value={10}
+                value={data ? data.orderFrequency : 0}
                 subValue="subvalue"
                 icon={<ShoppingCart />}
                 trend="up"
                 color="emerald"
               />
               <KPICard
-                title="Churn Risky"
-                value={10}
+                title="Average Order Value"
+                value={formatNumber(data ? data.avgOrderValue : 0)}
                 subValue="subvalue"
                 icon={<ShoppingCart />}
                 trend="up"
@@ -210,7 +226,7 @@ const App: React.FC = () => {
               />{" "}
               <KPICard
                 title="Profit Margin"
-                value={10}
+                value={formatPercent(data ? data.profitMargin : 0)}
                 subValue="subvalue"
                 icon={<ShoppingCart />}
                 trend="up"
@@ -303,36 +319,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="mb-8">
-                <h3 className="text-white text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Code2 className="w-5 h-5 text-emerald-400" />
-                  2. Core logic: calculate_user_profile
-                </h3>
-                <div className="bg-black/50 p-6 rounded-xl font-mono text-slate-300 text-xs overflow-x-auto border border-slate-800 leading-relaxed">
-                  <pre>{`def calculate_user_profile(email: str):
-    # Lấy orders từ Qdrant
-    res = client.scroll(collection_name="orders", 
-                        scroll_filter=Filter(must=[FieldCondition(key="email", match=MatchValue(value=email))]))
-    orders = [p.payload for p in res[0]]
-    
-    # Tính các metrics
-    total = len(orders)
-    confirmed = sum(1 for o in orders if o['status'] == 'confirmed')
-    revenue = sum(o['total_price'] for o in orders if o['status'] == 'confirmed')
-    
-    # Phân loại Segment tự động
-    segment = "high_value" if revenue > 10000000 else "regular"
-    
-    return {
-        "user_id": f"u-{hash(email)}",
-        "orders": { "total_orders": total, "confirmation_rate": confirmed/total ... },
-        "revenue": { "total_revenue": revenue, ... },
-        "segment": segment
-    }`}</pre>
-                </div>
-              </div>
-
               <div>
                 <h3 className="text-white text-lg font-semibold mb-4 flex items-center gap-2">
                   <Activity className="w-5 h-5 text-amber-400" />

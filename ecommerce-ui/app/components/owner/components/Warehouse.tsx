@@ -1,7 +1,38 @@
 import WarehouseActionTable from "./Dashboard/WarehouseActionTable";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { apiClient } from "@/utils/axios.client";
+import { UserContext } from "@/context/UserContext";
+import { API_PATHS } from "@/utils/apiPaths";
+const backend = apiClient("BACKEND");
+type ListProductInAllWarehouse = {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  totalQuantity: number;
+};
+
 export default function Warehouse() {
   const [isVisible, setIsVisible] = useState(false);
+  const ctx = useContext(UserContext);
+  if (!ctx) return null;
+  const { user, loading } = ctx;
+  const [data, setData] = useState<ListProductInAllWarehouse | null>(null);
+  const fetchData = async () => {
+    try {
+      const token = user.token;
+      const res = await backend.get(API_PATHS.WAREHOUSE.GET_ALL_PRODUCT, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      console.log("Fetched warehouses:", res.data);
+      setData(res.data);
+    } catch (err) {
+      console.error("Error fetching warehouses:", err);
+    }
+  };
+  useEffect(() => {
+    fetchData();
+  }, [user.token]);
   const handleClick = () => {
     setIsVisible(!isVisible);
   };

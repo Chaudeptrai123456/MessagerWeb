@@ -7,7 +7,8 @@ export const API_PATHS = {
   },
   WAREHOUSE: {
     GET_ALL: "/api/owner/warehouse/get",
-    ECOMMERCE: "/api/owner/dashboard/ecommerce"
+    ECOMMERCE: "/api/owner/dashboard/ecommerce",
+    GET_ALL_PRODUCT: "/api/owner/warehouse/product/get"
   },
   USER: {
     GET_ALL_USERS: "/api/users",

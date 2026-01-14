@@ -1,6 +1,7 @@
 package com.example.Messenger.Repository;
 
 import com.example.Messenger.Entity.Order;
+import com.example.Messenger.Record.ChurnRisk;
 import com.example.Messenger.Record.DashboardMetricsDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -61,7 +62,7 @@ SELECT
         ),
         0::NUMERIC
     ) AS total_cost,
-
+ 
     /* 7. Profit margin */
     CASE
         WHEN SUM(oi.quantity * oi.price) = 0
@@ -88,6 +89,71 @@ WHERE o.status = 'CONFIRMED';
             nativeQuery = true
     )
     Optional<DashboardMetricsDTO> findWarehousesWithEnoughStock();
+    @Query(nativeQuery = true,value = """
+             WITH order_stats AS (
+                SELECT
+                    o.customer_email,
+                    MAX(o.created_at)                                   AS last_order_at,
+                    COUNT(*) FILTER (
+                        WHERE o.created_at >= NOW() - INTERVAL '30 days'
+                    )                                                    AS orders_last_30_days
+                FROM orders o
+                WHERE o.status = 'CONFIRMED'
+                GROUP BY o.customer_email
+            ),
+            scores AS (
+                SELECT
+                    customer_email,
+                    last_order_at,
+                    orders_last_30_days,
+            
+                    -- RECENCY SCORE (0 → 1)
+                    LEAST(
+                        EXTRACT(DAY FROM (NOW() - last_order_at)) / 30.0,
+                        1
+                    ) AS recency_score,
+            
+                    -- FREQUENCY SCORE (0 → 1)
+                    LEAST(
+                        orders_last_30_days / 10.0,
+                        1
+                    ) AS frequency_score
+                FROM order_stats
+            )
+            SELECT
+                customer_email,
+                last_order_at,
+                orders_last_30_days,
+            
+                ROUND(recency_score, 2)   AS recency_score,
+                ROUND(frequency_score, 2) AS frequency_score,
+            
+                ROUND(
+                    LEAST(
+                        0.7 * recency_score +
+                        0.3 * (1 - frequency_score),
+                        1
+                    ),
+                    2
+                ) AS churn_risk,
+            
+                CASE
+                    WHEN
+                        LEAST(
+                            0.7 * recency_score +
+                            0.3 * (1 - frequency_score),
+                            1
+                        ) <= 0.3 THEN 'HEALTHY'
+                    WHEN
+                        LEAST(
+                            0.7 * recency_score +
+                            0.3 * (1 - frequency_score),
+                            1
+                        ) <= 0.6 THEN 'AT_RISK'
+                    ELSE 'HIGH_RISK'
+                END AS churn_label
+            FROM scores
+            ORDER BY churn_risk DESC;
+            """)
+    Optional<ChurnRisk> calculateChurnRisk();
 }
-
-

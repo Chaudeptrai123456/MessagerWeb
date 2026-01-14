@@ -4,6 +4,7 @@ import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Entity.StockImport;
 import com.example.Messenger.Entity.Warehouse;
 import com.example.Messenger.Entity.WarehouseStock;
+import com.example.Messenger.Record.InventoryType;
 import com.example.Messenger.Repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,14 +24,15 @@ public class SupplyChainService {
     private final ProductRepository productRepository;
     private final WarehouseStockRepository warehouseStockRepository;
     private final StockImportRepository stockImportRepository;
-
+    private final InventoryService inventoryService;
     private final InventoryLogRepository inventoryLogRepository;
     @Autowired
-    public SupplyChainService(WarehouseRepository warehouseRepository, ProductRepository productRepository, WarehouseStockRepository warehouseStockRepository, StockImportRepository stockImportRepository, InventoryLogRepository inventoryLogRepository) {
+    public SupplyChainService(WarehouseRepository warehouseRepository, ProductRepository productRepository, WarehouseStockRepository warehouseStockRepository, StockImportRepository stockImportRepository, InventoryService inventoryService, InventoryLogRepository inventoryLogRepository) {
         this.warehouseRepository = warehouseRepository;
         this.productRepository = productRepository;
         this.warehouseStockRepository = warehouseStockRepository;
         this.stockImportRepository = stockImportRepository;
+        this.inventoryService = inventoryService;
         this.inventoryLogRepository = inventoryLogRepository;
     }
     public void importStock(
@@ -60,8 +62,15 @@ public class SupplyChainService {
         stockImport.setImportPrice(importPrice);
         stockImport.setSupplier(supplier);
         stockImport.setNote(note);
-
         stockImportRepository.save(stockImport);
+        inventoryService.importStock(
+                productId,
+                quantity,
+                importPrice,
+                String.valueOf(InventoryType.IMPORT),
+                note,
+                "IMPORT_" + productId +"_TO_"+warehouseId      // refId (idempotent)
+        );
 
         /* 2️ UPDATE TỒN KHO */
         WarehouseStock stock = warehouseStockRepository

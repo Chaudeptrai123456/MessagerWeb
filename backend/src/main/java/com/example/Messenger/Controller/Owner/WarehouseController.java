@@ -81,6 +81,12 @@ public class WarehouseController {
                         req.maxStaff(),
                         req.maxWarehouses()
                 )
-        );    }
+        );
+    }
+    @GetMapping("/warehouse/product/get")
+    public ResponseEntity<?> getAllProductInAllWarehouse() {
+        return ResponseEntity.ok(this.warehouseEconomicService.getAllProductInAllWarehouse());
+    }
+
 }
 
