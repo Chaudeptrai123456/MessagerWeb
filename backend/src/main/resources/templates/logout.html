@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Logged out</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logout-card {
+            background: white;
+            padding: 40px 32px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+
+        .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        a {
+            display: inline-block;
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        a:hover {
+            background: #5a67d8;
+        }
+
+        .countdown {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="logout-card">
+    <div class="icon">👋</div>
+    <h1>You’re logged out</h1>
+    <p>Your session has ended safely.</p>
+
+    <form action=th:href="@{/logout}" method="post">
+        <button type="submit">Logout</button>
+    </form>
+    <div class="countdown">
+        Redirecting to login in <span id="sec">5</span>s...
+    </div>
+</div>
+
+<script>
+    let sec = 5;
+    const el = document.getElementById("sec");
+
+    setInterval(() => {
+        sec--;
+        el.textContent = sec;
+        if (sec === 0) {
+            window.location.href = "/login";
+        }
+    }, 1000);
+</script>
+
+</body>
+</html>

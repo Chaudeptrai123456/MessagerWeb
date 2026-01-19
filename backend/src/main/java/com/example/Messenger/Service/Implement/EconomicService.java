@@ -1,8 +1,8 @@
 package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Product;
-import com.example.Messenger.Record.EconomicReport;
-import com.example.Messenger.Record.InventoryType;
+import com.example.Messenger.Record.Orther.EconomicReport;
+import com.example.Messenger.Record.Type.InventoryType;
 import com.example.Messenger.Repository.InventoryLogRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Repository.StockImportRepository;

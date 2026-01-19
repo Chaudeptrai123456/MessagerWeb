@@ -1,8 +1,9 @@
 package com.example.Messenger.Repository;
 
 import com.example.Messenger.Entity.Order;
-import com.example.Messenger.Record.ChurnRisk;
-import com.example.Messenger.Record.DashboardMetricsDTO;
+import com.example.Messenger.Record.Orther.ChurnRisk;
+import com.example.Messenger.Record.DTO.DashboardMetricsDTO;
+import com.example.Messenger.Record.View.DashboardMetricsView;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -27,7 +28,7 @@ WITH avg_import_price AS (
 SELECT
     /* 1. Total revenue */
     COALESCE(
-        SUM(oi.quantity * oi.price)::NUMERIC,
+        SUM(oi.quantity * oi.sell_price)::NUMERIC,
         0::NUMERIC
     ) AS total_revenue,
 
@@ -51,7 +52,7 @@ SELECT
         WHEN COUNT(DISTINCT o.id) = 0
             THEN 0::NUMERIC
         ELSE
-            SUM(oi.quantity * oi.price)::NUMERIC
+            SUM(oi.quantity * oi.sell_price)::NUMERIC
             / COUNT(DISTINCT o.id)
     END AS avg_order_value,
 
@@ -62,33 +63,29 @@ SELECT
         ),
         0::NUMERIC
     ) AS total_cost,
- 
+
     /* 7. Profit margin */
     CASE
-        WHEN SUM(oi.quantity * oi.price) = 0
+        WHEN SUM(oi.quantity * oi.sell_price) = 0
             THEN 0::NUMERIC
         ELSE
             (
-                SUM(oi.quantity * oi.price)::NUMERIC
+                SUM(oi.quantity * oi.sell_price)::NUMERIC
                 - SUM(
                     oi.quantity * COALESCE(aip.avg_import_price, 0::NUMERIC)
                 )
             )
-            / SUM(oi.quantity * oi.price)::NUMERIC
+            / SUM(oi.quantity * oi.sell_price)::NUMERIC
     END AS profit_margin
-
 FROM orders o
-JOIN order_item oi
-    ON oi.order_id = o.id
-JOIN product p
-    ON p.id = oi.product_id
-LEFT JOIN avg_import_price aip
-    ON aip.product_id = p.id
+JOIN order_item oi ON oi.order_id = o.id
+JOIN product p ON p.id = oi.product_id
+LEFT JOIN avg_import_price aip ON aip.product_id = p.id
 WHERE o.status = 'CONFIRMED';
         """,
             nativeQuery = true
     )
-    Optional<DashboardMetricsDTO> findWarehousesWithEnoughStock();
+    Optional<DashboardMetricsView> findWarehousesWithEnoughStock();
     @Query(nativeQuery = true,value = """
              WITH order_stats AS (
                 SELECT

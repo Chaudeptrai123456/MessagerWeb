@@ -1,6 +1,6 @@
 package com.example.Messenger.Entity;
 
-import com.example.Messenger.Record.Permission;
+import com.example.Messenger.Record.Type.Permission;
 import jakarta.persistence.*;
 
 @Entity

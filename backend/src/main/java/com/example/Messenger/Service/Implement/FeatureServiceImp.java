@@ -3,7 +3,7 @@ package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Feature;
 import com.example.Messenger.Entity.Product;
-import com.example.Messenger.Record.FeatureRequest;
+import com.example.Messenger.Record.Request.FeatureRequest;
 import com.example.Messenger.Repository.FeatureRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Service.FeatureService;

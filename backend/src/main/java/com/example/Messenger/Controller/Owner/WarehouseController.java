@@ -1,9 +1,9 @@
 package com.example.Messenger.Controller.Owner;
 
-import com.example.Messenger.Record.DashboardMetricsDTO;
-import com.example.Messenger.Record.UserResponse;
-import com.example.Messenger.Record.WarehouseRequest;
-import com.example.Messenger.Record.assignManagerToWarehouseRequest;
+import com.example.Messenger.Record.Response.UserResponse;
+import com.example.Messenger.Record.Request.WarehouseRequest;
+import com.example.Messenger.Record.Request.assignManagerToWarehouseRequest;
+import com.example.Messenger.Record.View.DashboardMetricsView;
 import com.example.Messenger.Repository.UserRepository;
 import com.example.Messenger.Service.Implement.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,6 @@ import com.example.Messenger.Entity.Warehouse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.Optional;
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/owner")
@@ -60,17 +59,8 @@ public class WarehouseController {
         return ResponseEntity.of(Optional.ofNullable(productServiceImp.getAllProductStock()));
     }
     @GetMapping("/dashboard/ecommerce")
-    public DashboardMetricsDTO getDashboardMetrics() {
-        return warehouseEconomicService.getDashboardMetrics()
-                .orElse(new DashboardMetricsDTO(
-                        BigDecimal.ZERO, // totalRevenue
-                        0L,              // totalOrders
-                        0L,              // totalCustomers
-                        BigDecimal.ZERO, // orderFrequency
-                        BigDecimal.ZERO, // avgOrderValue
-                        BigDecimal.ZERO, // totalCost
-                        BigDecimal.ZERO  // profitMargin
-                ));
+    public Optional<DashboardMetricsView> getDashboardMetrics() {
+        return warehouseEconomicService.getDashboardMetrics();
     }
     @PostMapping("/warehouse/assignment")
     public ResponseEntity<?> assignmentManagerWareHouse(@RequestBody assignManagerToWarehouseRequest req) {

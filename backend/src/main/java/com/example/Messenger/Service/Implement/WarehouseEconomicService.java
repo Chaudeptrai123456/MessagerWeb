@@ -1,10 +1,11 @@
 package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Warehouse;
-import com.example.Messenger.Record.DashboardMetricsDTO;
-import com.example.Messenger.Record.ProductInStock;
-import com.example.Messenger.Record.WarehouseEconomicDTO;
-import com.example.Messenger.Record.WarehouseRequest;
+import com.example.Messenger.Record.DTO.DashboardMetricsDTO;
+import com.example.Messenger.Record.DTO.WarehouseEconomicDTO;
+import com.example.Messenger.Record.Request.WarehouseRequest;
+import com.example.Messenger.Record.View.DashboardMetricsView;
+import com.example.Messenger.Record.View.ProductInStockView;
 import com.example.Messenger.Repository.InventoryLogRepository;
 import com.example.Messenger.Repository.OrderRepository;
 import com.example.Messenger.Repository.StockImportRepository;
@@ -35,7 +36,7 @@ public class WarehouseEconomicService {
         this.warehouseRepository = warehouseRepository;
         this.orderRepository = orderRepository;
     }
-    public List<ProductInStock> getAllProductInAllWarehouse(){
+    public List<ProductInStockView> getAllProductInAllWarehouse(){
         return this.warehouseRepository.findAllProductInWareHouse();
     }
     public Warehouse createWarehouse(WarehouseRequest req) {
@@ -48,7 +49,7 @@ public class WarehouseEconomicService {
                     return warehouseRepository.save(warehouse);
                 });
     }
-    public Optional<DashboardMetricsDTO> getDashboardMetrics() {
+    public Optional<DashboardMetricsView> getDashboardMetrics() {
         return orderRepository.findWarehousesWithEnoughStock();
     }
     public WarehouseEconomicDTO calculateWarehouseProfit(

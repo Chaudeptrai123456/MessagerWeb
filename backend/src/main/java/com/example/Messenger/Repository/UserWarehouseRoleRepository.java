@@ -3,7 +3,7 @@ package com.example.Messenger.Repository;
 import com.example.Messenger.Entity.User;
 import com.example.Messenger.Entity.UserWarehouseRole;
 import com.example.Messenger.Entity.Warehouse;
-import com.example.Messenger.Record.WarehouseRole;
+import com.example.Messenger.Record.Type.WarehouseRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

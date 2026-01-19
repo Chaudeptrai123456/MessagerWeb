@@ -1,7 +1,7 @@
 package com.example.Messenger.Service;
 
 import com.example.Messenger.Entity.Order;
-import com.example.Messenger.Record.OrderRequest;
+import com.example.Messenger.Record.Request.OrderRequest;
 
 import java.util.List;
 

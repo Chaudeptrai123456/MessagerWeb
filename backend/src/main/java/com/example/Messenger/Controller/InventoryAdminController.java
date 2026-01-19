@@ -2,9 +2,9 @@ package com.example.Messenger.Controller;
 
 import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Entity.StockImport;
-import com.example.Messenger.Record.AdjustStockRequest;
-import com.example.Messenger.Record.EconomicReport;
-import com.example.Messenger.Record.StockImportRequest;
+import com.example.Messenger.Record.Request.AdjustStockRequest;
+import com.example.Messenger.Record.Orther.EconomicReport;
+import com.example.Messenger.Record.Request.StockImportRequest;
 import com.example.Messenger.Repository.InventoryLogRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Repository.StockImportRepository;

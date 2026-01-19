@@ -5,24 +5,26 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Entity
 @Data
 public class OrderItem {
-
     @Id
     private String id;
-
-    private Integer quantity;
-    private Double price;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "product_id")
-    private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
+
+    private Integer quantity;
+
+    private Double sellPrice;
+    private Double costPrice;
     public String getId() {
         return id;
     }
@@ -39,12 +41,20 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    public Double getPrice() {
-        return price;
+    public Double getSellPrice() {
+        return sellPrice;
     }
 
-    public void setPrice(Double price) {
-        this.price = price;
+    public void setSellPrice(Double sellPrice) {
+        this.sellPrice = sellPrice;
+    }
+
+    public Double getCostPrice() {
+        return costPrice;
+    }
+
+    public void setCostPrice(Double costPrice) {
+        this.costPrice = costPrice;
     }
 
     public Product getProduct() {

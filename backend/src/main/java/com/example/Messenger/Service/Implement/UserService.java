@@ -3,7 +3,7 @@ package com.example.Messenger.Service.Implement;
 import com.example.Messenger.Entity.Authority;
 import com.example.Messenger.Entity.User;
 import com.example.Messenger.Exception.ForbiddenException;
-import com.example.Messenger.Record.UserProfile;
+import com.example.Messenger.Record.Orther.UserProfile;
 import com.example.Messenger.Repository.AuthorityRepository;
 import com.example.Messenger.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static com.example.Messenger.Record.Permission.IMPORT_STOCK;
+import static com.example.Messenger.Record.Type.Permission.IMPORT_STOCK;
 
 @Service
 public class UserService {

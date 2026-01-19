@@ -126,13 +126,12 @@ public class SecurityConfig {
 
                             Cookie cookie = new Cookie("token", jwtToken);
                             cookie.setHttpOnly(false);
-                            cookie.setSecure(false); // ⚠️ Nếu đang test ở localhost thì để false
+                            cookie.setSecure(false); //  test ở localhost thì để false
                             cookie.setPath("/");
                             cookie.setMaxAge((int) Duration.ofHours(1).toSeconds());
-                            cookie.setAttribute("SameSite", "Lax"); // hoặc "None" nếu cần
+                            cookie.setAttribute("SameSite", "Lax"); //
                             response.addCookie(cookie);
 //                            response.sendRedirect("/api/user/oauth2/info");
-
                              // Gửi refresh token qua header (cookie không chứa được 2 key)
                              SavedRequest savedRequest = requestCache.getRequest(request, response);
                              if (savedRequest != null) {

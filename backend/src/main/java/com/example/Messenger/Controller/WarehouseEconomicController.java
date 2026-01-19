@@ -1,6 +1,6 @@
 package com.example.Messenger.Controller;
 
-import com.example.Messenger.Record.WarehouseEconomicDTO;
+import com.example.Messenger.Record.DTO.WarehouseEconomicDTO;
 import com.example.Messenger.Service.Implement.WarehouseEconomicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

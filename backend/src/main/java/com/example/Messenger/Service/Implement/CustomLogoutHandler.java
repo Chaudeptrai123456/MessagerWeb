@@ -32,22 +32,12 @@ public class CustomLogoutHandler implements LogoutHandler {
                 }
             }
         }
-
-        // 2️⃣ Xoá refresh token trong Redis
         if (jwtToken != null) {
             redisService.deleteRefreshToken(jwtToken);
         }
-
-        // 3️⃣ Xoá cookie token
         deleteCookie(response, "token");
-
-        // 4️⃣ Xoá refresh cookie nếu có
         deleteCookie(response, "refresh_token");
-
-        // 5️⃣ Xoá JSESSIONID (Spring Session)
         deleteCookie(response, "JSESSIONID");
-
-        // 6️⃣ Clear Security Context
         SecurityContextHolder.clearContext();
     }
 
@@ -55,7 +45,7 @@ public class CustomLogoutHandler implements LogoutHandler {
         Cookie cookie = new Cookie(name, "");
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setSecure(false); // true nếu HTTPS
+        cookie.setSecure(false);
         cookie.setMaxAge(0);
         response.addCookie(cookie);
     }

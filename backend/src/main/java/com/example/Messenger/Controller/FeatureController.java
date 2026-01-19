@@ -1,7 +1,7 @@
 package com.example.Messenger.Controller;
 
 import com.example.Messenger.Entity.Feature;
-import com.example.Messenger.Record.FeatureRequest;
+import com.example.Messenger.Record.Request.FeatureRequest;
 import com.example.Messenger.Service.FeatureService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

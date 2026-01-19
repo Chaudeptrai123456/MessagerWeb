@@ -1,6 +1,6 @@
 package com.example.Messenger.Service.Implement;
 
-import com.example.Messenger.Record.WarehouseRole;
+import com.example.Messenger.Record.Type.WarehouseRole;
 import com.example.Messenger.Repository.UserWarehouseRoleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

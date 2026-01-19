@@ -1,6 +1,6 @@
 package com.example.Messenger.Entity;
 
-import com.example.Messenger.Record.InventoryType;
+import com.example.Messenger.Record.Type.InventoryType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;

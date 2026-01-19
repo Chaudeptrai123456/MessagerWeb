@@ -1,6 +1,6 @@
 package com.example.Messenger.Entity;
 
-import com.example.Messenger.Record.WarehouseRole;
+import com.example.Messenger.Record.Type.WarehouseRole;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;

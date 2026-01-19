@@ -1,15 +1,14 @@
 package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.*;
-import com.example.Messenger.Record.OrderItemRequest;
-import com.example.Messenger.Record.OrderRequest;
+import com.example.Messenger.Record.Request.OrderItemRequest;
+import com.example.Messenger.Record.Request.OrderRequest;
 import com.example.Messenger.Repository.*;
 import com.example.Messenger.Service.OrderService;
 import com.example.Messenger.Service.PendingOrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.datatransfer.SystemFlavorMap;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -23,19 +22,22 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
     private final InventoryService inventoryService;
+    private final InventoryLogRepository inventoryLogRepository;
     private final WarehouseRepository warehouseRepository;
     private final WarehouseStockRepository warehouseStockRepository;
-    public OrderServiceImpl(PendingOrderService pendingOrderService, GmailServiceImp gmailServiceImp, OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository, InventoryService inventoryService, WarehouseRepository warehouseRepository, WarehouseStockRepository warehouseStockRepository) {
+    private final StockImportRepository stockImportRepository;
+    public OrderServiceImpl(PendingOrderService pendingOrderService, GmailServiceImp gmailServiceImp, OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository, InventoryService inventoryService, InventoryLogRepository inventoryLogRepository, WarehouseRepository warehouseRepository, WarehouseStockRepository warehouseStockRepository, StockImportRepository stockImportRepository) {
         this.pendingOrderService = pendingOrderService;
         this.gmailServiceImp = gmailServiceImp;
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
         this.inventoryService = inventoryService;
+        this.inventoryLogRepository = inventoryLogRepository;
         this.warehouseRepository = warehouseRepository;
         this.warehouseStockRepository = warehouseStockRepository;
+        this.stockImportRepository = stockImportRepository;
     }
-
     @Override
     @Transactional
     public Order createOrder(OrderRequest request) {
@@ -63,7 +65,7 @@ public class OrderServiceImpl implements OrderService {
             item.setId(generateIdItems(product.getName(), order.getId()));
             item.setProduct(product);
             item.setQuantity(itemReq.quantity());
-            item.setPrice(product.getCurrentPrice());
+//            item.setPrice(product.getCurrentPrice());
             // ⚡ Quan trọng: Gắn ngược lại
             item.setOrder(order);
             System.out.println("items " + item.getId());
@@ -151,7 +153,6 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Token không hợp lệ hoặc đã hết hạn!");
         }
 
-        /* 1️⃣ LẤY WAREHOUSE MẶC ĐỊNH */
         Warehouse warehouse = selectBestWarehouse(request);
 
         Order order = new Order();
@@ -167,13 +168,11 @@ public class OrderServiceImpl implements OrderService {
 
         for (OrderItemRequest itemReq : request.items()) {
 
-            /* 2️⃣ LẤY PRODUCT */
             Product product = productRepository.findById(itemReq.productId())
                     .orElseThrow(() ->
                             new RuntimeException("Product not found: " + itemReq.productId())
                     );
 
-            /* 3️⃣ LẤY TỒN KHO THEO WAREHOUSE */
             WarehouseStock stock = warehouseStockRepository
                     .findByWarehouseAndProduct(warehouse, product)
                     .orElseThrow(() ->
@@ -182,34 +181,34 @@ public class OrderServiceImpl implements OrderService {
                             )
                     );
 
-            /* 4️⃣ CHECK TỒN */
             if (stock.getQuantity() < itemReq.quantity()) {
                 throw new RuntimeException(
                         "Not enough stock for product: " + product.getName()
                 );
             }
 
-            /* 5️⃣ TRỪ TỒN */
             stock.setQuantity(stock.getQuantity() - itemReq.quantity());
             warehouseStockRepository.save(stock);
-
-            /* 6️⃣ TẠO ORDER ITEM */
+            // correct
+            var importPrice = this.stockImportRepository.findLatestImportPrice(product.getId(), warehouse.getId());
             OrderItem item = new OrderItem();
             item.setId(UUID.randomUUID().toString());
             item.setProduct(product);
             item.setQuantity(itemReq.quantity());
-            item.setPrice(product.getCurrentPrice());
             item.setOrder(order);
-
+            item.setSellPrice(product.getPrice() - (product.getPrice() * product.getCurrentDiscountPercentage()));
+            item.setCostPrice(importPrice);
             items.add(item);
-            totalAmount += product.getCurrentPrice() * itemReq.quantity();
+            totalAmount += item.getSellPrice() * itemReq.quantity();
         }
 
         order.setItems(items);
         order.setTotalAmount(totalAmount);
 
         Order saved = orderRepository.save(order);
-
+        for (OrderItemRequest itemReq : request.items()) {
+            inventoryService.sell(itemReq.productId(), itemReq.quantity(), saved.getId());
+        }
         pendingOrderService.deletePendingOrder(token);
         gmailServiceImp.sendSuccessEmail(request.customerEmail(), saved);
 

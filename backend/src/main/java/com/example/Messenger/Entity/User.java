@@ -1,7 +1,7 @@
 package com.example.Messenger.Entity;
 
-import com.example.Messenger.Record.Permission;
-import com.example.Messenger.Record.WarehouseRole;
+import com.example.Messenger.Record.Type.Permission;
+import com.example.Messenger.Record.Type.WarehouseRole;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;

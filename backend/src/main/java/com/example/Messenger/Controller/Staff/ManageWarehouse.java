@@ -1,8 +1,7 @@
 package com.example.Messenger.Controller.Staff;
 
-import com.example.Messenger.Record.ImportStockRequest;
+import com.example.Messenger.Record.Request.ImportStockRequest;
 import com.example.Messenger.Service.Implement.SupplyChainService;
-import com.example.Messenger.Service.Implement.UserService;
 import com.example.Messenger.Service.Implement.WarehouseEconomicService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

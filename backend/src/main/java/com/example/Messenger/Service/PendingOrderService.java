@@ -1,6 +1,6 @@
 package com.example.Messenger.Service;
 
-import com.example.Messenger.Record.OrderRequest;
+import com.example.Messenger.Record.Request.OrderRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

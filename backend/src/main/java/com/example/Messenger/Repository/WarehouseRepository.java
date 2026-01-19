@@ -1,8 +1,7 @@
 package com.example.Messenger.Repository;
 
 import com.example.Messenger.Entity.Warehouse;
-import com.example.Messenger.Record.DashboardMetricsDTO;
-import com.example.Messenger.Record.ProductInStock;
+import com.example.Messenger.Record.View.ProductInStockView;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -26,6 +25,9 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, String> {
         ON p.id = ws.product_id
     GROUP BY
         p.id, p.name, p.price, p.description
-    """)
-    List<ProductInStock> findAllProductInWareHouse();
+""")
+    List<ProductInStockView> findAllProductInWareHouse();
+
+
+
 }

@@ -25,8 +25,8 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStock,S
     FROM WarehouseStock ws
     WHERE ws.product.id = :productId
       AND ws.quantity >= :requiredQty
-    ORDER BY ws.quantity DESC
-""")
+    ORDER BY (ws.quantity - :requiredQty) ASC
+    """)
     List<Warehouse> findWarehousesWithEnoughStock(
             @Param("productId") String productId,
             @Param("requiredQty") int requiredQty

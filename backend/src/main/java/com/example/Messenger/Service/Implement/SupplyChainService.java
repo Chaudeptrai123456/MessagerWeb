@@ -4,7 +4,7 @@ import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Entity.StockImport;
 import com.example.Messenger.Entity.Warehouse;
 import com.example.Messenger.Entity.WarehouseStock;
-import com.example.Messenger.Record.InventoryType;
+import com.example.Messenger.Record.Type.InventoryType;
 import com.example.Messenger.Repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
