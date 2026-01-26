@@ -231,3 +231,89 @@ Backend tích hợp các thành phần hạ tầng để đảm bảo hệ thố
 ---
 
 > ✨ Phần tiếp theo sẽ mô tả chi tiết công nghệ sử dụng cho từng service.
+# 🌐 GATEWAY SERVICE
+
+Gateway đóng vai trò là **cửa ngõ duy nhất** cho toàn bộ request từ client.
+
+Chức năng chính:
+
+* Định tuyến request tới đúng microservice
+* Xác thực token OAuth2
+* Áp dụng rate limit
+* Logging & tracing
+* Load balancing
+
+---
+
+# 🖥 ECOMMERCE UI (FRONTEND)
+
+Frontend là giao diện web cho người dùng cuối.
+
+Chức năng chính:
+
+* Đăng nhập bằng Google
+* Xem danh sách sản phẩm
+* Đặt hàng
+* Theo dõi trạng thái đơn
+* Quản lý tài khoản cá nhân
+
+---
+
+# 🔁 NODE SERVER (REALTIME & FILE)
+
+Node.js server dùng cho các tác vụ realtime và phụ trợ.
+
+Chức năng chính:
+
+* WebSocket realtime
+* Upload file / ảnh
+* Notification
+* Background jobs
+
+---
+
+# 🤖 PYTHON EMBEDDING SERVER (AI)
+
+Python server phục vụ các tính năng AI.
+
+Chức năng chính:
+
+* Text embedding
+* Semantic search
+* Recommendation system
+
+---
+
+# 🛠 CÔNG NGHỆ SỬ DỤNG
+
+* Backend: Spring Boot / NestJS
+* Gateway: Spring Cloud Gateway
+* Frontend: React / Next.js
+* Message Broker: Apache Kafka
+* Cache: Redis
+* Database: MySQL / MongoDB
+* Auth: OAuth2 Google
+* AI: Python, Embedding models
+
+---
+
+# 🚀 HƯỚNG PHÁT TRIỂN TIẾP THEO
+
+* Thêm payment service
+* Thêm recommendation nâng cao
+* Observability (Prometheus, Grafana)
+* CI/CD pipeline
+
+---
+
+# 👤 TÁC GIẢ
+
+**Châu** – Học sinh, yêu thích backend & hệ thống phân tán
+GitHub: [https://github.com/Chaudeptrai123456](https://github.com/Chaudeptrai123456)
+
+---
+
+# 📄 LICENSE
+
+MIT License
+
