@@ -1,0 +1,42 @@
+# Microservices E‑Commerce System
+
+> Hệ thống e‑commerce xây dựng theo kiến trúc **microservices**, gồm nhiều service backend, gateway, UI frontend và các server AI/Node hỗ trợ.
+
+---
+
+## 📌 Giới thiệu
+
+Dự án **Microservices E‑Commerce System** là một hệ thống bán hàng trực tuyến được thiết kế theo mô hình **microservices**, giúp dễ mở rộng, bảo trì và phát triển độc lập từng thành phần.
+
+Hệ thống hiện bao gồm các module chính:
+
+* **backend/** – Các service backend cốt lõi (ví dụ: product, order, user, inventory, …).
+* **gateway/** – API Gateway dùng để định tuyến request từ client tới các microservice.
+* **ecommerce-ui/** – Frontend giao diện người dùng (web UI) cho hệ thống e‑commerce.
+* **node-server/** – Node.js server hỗ trợ realtime, upload file hoặc các tác vụ phụ trợ.
+* **python-embedding-server/** – Python server dùng cho AI/ML (ví dụ: embedding, search, recommendation).
+
+Mục tiêu của dự án:
+
+* Xây dựng một hệ thống e‑commerce có kiến trúc chuẩn microservices.
+* Tách biệt rõ frontend – gateway – backend – AI service.
+* Dễ dàng scale từng service độc lập.
+* Thuận tiện cho việc học tập và mở rộng về sau.
+
+---
+
+## 📂 Cấu trúc thư mục
+
+```
+.
+├── backend/                    # Các microservice backend (Spring Boot / NestJS / ...)
+├── gateway/                    # API Gateway
+├── ecommerce-ui/               # Frontend UI (React / Next.js / ...)
+├── node-server/                # Node.js server phụ trợ
+├── python-embedding-server/    # Python AI/Embedding server
+└── README.md
+```
+
+---
+
+> ✨ Phần tiếp theo sẽ mô tả chi tiết công nghệ sử dụng, cách cài đặt và cách chạy toàn bộ hệ thống.
