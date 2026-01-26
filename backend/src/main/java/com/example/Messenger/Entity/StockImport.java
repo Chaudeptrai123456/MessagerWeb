@@ -14,15 +14,27 @@ public class StockImport {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Product product;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Warehouse warehouse;
     @Column(nullable = false)
     private Integer quantity;
 
     @Column(nullable = false)
     private Double importPrice;
 
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
     private String supplier;
     private String note;
+
+    public Warehouse getWarehouse() {
+        return warehouse;
+    }
+
+    public void setWarehouse(Warehouse warehouse) {
+        this.warehouse = warehouse;
+    }
 
     private LocalDateTime importedAt = LocalDateTime.now();
     public Long getId() {
@@ -79,5 +91,13 @@ public class StockImport {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

@@ -103,6 +103,9 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             authorization-grant-type: authorization_code
             client-name: Google
+      provider:
+        google:
+          authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
 app:
   auth:
     host: localhost

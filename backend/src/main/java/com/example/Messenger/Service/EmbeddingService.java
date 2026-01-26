@@ -1,16 +1,10 @@
 package com.example.Messenger.Service;
 
-import com.example.Messenger.Entity.Feature;
-import com.example.Messenger.Entity.Product;
-import com.example.Messenger.Record.ProductEmbedding;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.Messenger.Record.Orther.ProductEmbedding;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
 import java.util.Map;
 
 @Service

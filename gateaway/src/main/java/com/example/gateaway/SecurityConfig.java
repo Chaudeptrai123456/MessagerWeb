@@ -22,7 +22,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(ex -> ex
-                        .pathMatchers("/login**", "/oauth2/authorization/**", "/login/oauth2/code/**","/api/products/get","/api/categories/get").permitAll()
+                        .pathMatchers("/login**", "/oauth2/authorization/**", "/login/oauth2/code/**","/api/products/get","/api/service/products/get","/api/categories/get").permitAll()
                         .pathMatchers("/api/**").authenticated()
                         .anyExchange().permitAll()
                 )

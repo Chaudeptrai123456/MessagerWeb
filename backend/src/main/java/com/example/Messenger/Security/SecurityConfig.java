@@ -18,6 +18,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -68,6 +72,7 @@ public class SecurityConfig {
         HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
         requestCache.setCreateSessionAllowed(true);
         http
+                // font end
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowedOrigins(List.of("http://localhost:3000"));
@@ -90,6 +95,11 @@ public class SecurityConfig {
                                 "/api/products/search/**"
                         ).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST,"/api/owner/**").hasRole("OWNER")
+                        .requestMatchers(HttpMethod.POST,"/api/user/verify/staff").hasAnyRole("MANAGER")
+                        .requestMatchers("/api/staff/**").hasAnyRole("MANAGER","STAFF")
+                        .requestMatchers("/api/manager/**").hasAnyRole("MANAGER")
+                        .requestMatchers("/api/admin/**").hasAnyRole("MANAGER","STAFF")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers("/api/orders").authenticated()
@@ -116,30 +126,29 @@ public class SecurityConfig {
 
                             Cookie cookie = new Cookie("token", jwtToken);
                             cookie.setHttpOnly(false);
-                            cookie.setSecure(false); // ⚠️ Nếu đang test ở localhost thì để false
+                            cookie.setSecure(false); //  test ở localhost thì để false
                             cookie.setPath("/");
                             cookie.setMaxAge((int) Duration.ofHours(1).toSeconds());
-                            cookie.setAttribute("SameSite", "Lax"); // hoặc "None" nếu cần
+                            cookie.setAttribute("SameSite", "Lax"); //
                             response.addCookie(cookie);
-                            response.sendRedirect("/api/user/oauth2/info");
-
-                            // // Gửi refresh token qua header (cookie không chứa được 2 key)
-                            // SavedRequest savedRequest = requestCache.getRequest(request, response);
-                            // if (savedRequest != null) {
-                            //     System.out.println("🔹 Saved redirect: " + savedRequest.getRedirectUrl());
-                            // } else {
-                            //     System.out.println("⚠️ No saved request found!");
-                            // }
-                            // String redirectUrl;
-                            // if (savedRequest != null) {
-                            //     redirectUrl = savedRequest.getRedirectUrl();
-                            //     // Xóa saved request để tránh bị redirect lặp
-                            //     requestCache.removeRequest(request, response);
-                            // } else {
-                            //     redirectUrl = "http://localhost:3000"; // fallback mặc định
-                            // }
-                            // // Redirect tới URL cũ hoặc fallback
-                            // response.sendRedirect(redirectUrl);
+//                            response.sendRedirect("/api/user/oauth2/info");
+                             // Gửi refresh token qua header (cookie không chứa được 2 key)
+                             SavedRequest savedRequest = requestCache.getRequest(request, response);
+                             if (savedRequest != null) {
+                                 System.out.println("🔹 Saved redirect: " + savedRequest.getRedirectUrl());
+                             } else {
+                                 System.out.println("⚠️ No saved request found!");
+                             }
+                             String redirectUrl;
+                             if (savedRequest != null) {
+                                 redirectUrl = savedRequest.getRedirectUrl();
+                                 // Xóa saved request để tránh bị redirect lặp
+                                 requestCache.removeRequest(request, response);
+                             } else {
+                                 redirectUrl = "http://localhost:3000"; // fallback mặc định
+                             }
+                             // Redirect tới URL cũ hoặc fallback
+                             response.sendRedirect(redirectUrl);
                         })
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -157,7 +166,7 @@ public class SecurityConfig {
 
         RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
                 .privateKey((RSAPrivateKey) keyPair.getPrivate())
-                .keyID("auth-key") // ❗ CỐ ĐỊNH
+                .keyID("auth-key") //
                 .build();
 
         return new ImmutableJWKSet<>(new JWKSet(rsaKey));
@@ -177,7 +186,23 @@ public class SecurityConfig {
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtDecoder jwtDecoder) {
         return new JwtAuthenticationFilter(jwtDecoder);
     }
-
+    @Bean
+    public MethodSecurityExpressionHandler methodSecurityExpressionHandler( RoleHierarchy roleHierarchy) {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
+    }
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
+        hierarchy.setHierarchy("""
+        ROLE_OWNER > ROLE_ADMIN
+        ROLE_ADMIN > ROLE_MANAGER
+        ROLE_MANAGER > ROLE_STAFF
+        ROLE_STAFF > ROLE_USER
+    """);
+        return hierarchy;
+    }
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();

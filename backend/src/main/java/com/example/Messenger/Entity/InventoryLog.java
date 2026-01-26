@@ -1,6 +1,6 @@
 package com.example.Messenger.Entity;
 
-import com.example.Messenger.Record.InventoryType;
+import com.example.Messenger.Record.Type.InventoryType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -20,6 +20,10 @@ public class InventoryLog {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
+
+    @ManyToOne
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

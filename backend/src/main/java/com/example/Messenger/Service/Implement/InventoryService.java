@@ -3,7 +3,7 @@ package com.example.Messenger.Service.Implement;
 import com.example.Messenger.Entity.InventoryLog;
 import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Entity.StockImport;
-import com.example.Messenger.Record.InventoryType;
+import com.example.Messenger.Record.Type.InventoryType;
 import com.example.Messenger.Repository.InventoryLogRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Repository.StockImportRepository;
@@ -13,14 +13,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static com.example.Messenger.Record.Type.InventoryType.IMPORT;
+
 @Service
 @RequiredArgsConstructor
 public class InventoryService {
-
     private final ProductRepository productRepository;
     private final InventoryLogRepository logRepository;
     private final StockImportRepository stockImportRepository;
-
     public InventoryService(ProductRepository productRepository, InventoryLogRepository logRepository, StockImportRepository stockImportRepository) {
         this.productRepository = productRepository;
         this.logRepository = logRepository;
@@ -35,24 +35,20 @@ public class InventoryService {
             String note,
             String refId        // 👈 ref nghiệp vụ
     ) {
-
         // 1️⃣ LOCK product
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
-
         // 2️⃣ Idempotency check (quan trọng)
         boolean exists = logRepository
                 .existsByProductIdAndRefIdAndType(
                         productId,
                         refId,
-                        InventoryType.IMPORT
+                        IMPORT
                 );
-
         if (exists) {
             // đã import rồi → bỏ qua
             return;
         }
-
         // 3️⃣ Tạo StockImport (nguồn dữ liệu nhập)
         StockImport stockImport = new StockImport();
         stockImport.setProduct(product);
@@ -73,17 +69,14 @@ public class InventoryService {
         // 5️⃣ Ghi InventoryLog (dòng chảy kho)
         InventoryLog log = new InventoryLog();
         log.setProduct(product);
-        log.setType(InventoryType.IMPORT);
+        log.setType(IMPORT);
         log.setQuantity(quantity);          // + nhập
         log.setUnitPrice(importPrice);
         log.setRefId(refId);                // 👈 liên kết nghiệp vụ
-
         logRepository.save(log);
     }
-
     @Transactional
     public void importFromStockImport(Long stockImportId) {
-
         StockImport stockImport = stockImportRepository
                 .findById(stockImportId)
                 .orElseThrow(() -> new RuntimeException("StockImport not found"));
@@ -96,7 +89,7 @@ public class InventoryService {
         boolean existed = logRepository.existsByProductAndRefIdAndType(
                 product,
                 stockImportId.toString(),
-                InventoryType.IMPORT
+                IMPORT
         );
 
         if (existed) return;
@@ -109,7 +102,7 @@ public class InventoryService {
         // 2️⃣ ghi inventory log
         logRepository.save(new InventoryLog(
                 product,
-                InventoryType.IMPORT,
+                IMPORT,
                 stockImport.getQuantity(),
                 stockImport.getImportPrice(),
                 stockImportId.toString()
@@ -129,7 +122,7 @@ public class InventoryService {
 
         logRepository.save(new InventoryLog(
                 product,
-                InventoryType.IMPORT,
+                IMPORT,
                 quantity,
                 importPrice,
                 importRef
@@ -162,7 +155,7 @@ public class InventoryService {
                 InventoryType.SALE,
                 -quantity,
                 product.getPrice(),
-                orderId
+                "OrderId " + orderId
         ));
     }
 

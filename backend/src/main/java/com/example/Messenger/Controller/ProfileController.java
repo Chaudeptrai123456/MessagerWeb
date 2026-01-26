@@ -4,20 +4,14 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.example.Messenger.Entity.Authority;
 import com.example.Messenger.Entity.User;
-import com.example.Messenger.Record.UserProfile;
-import com.example.Messenger.Record.UserProfileResponse;
+import com.example.Messenger.Record.Response.UserProfileResponse;
 import com.example.Messenger.Repository.AuthorityRepository;
 import com.example.Messenger.Repository.UserRepository;
 import com.example.Messenger.Utils.JwtTokenUtil;
 import com.example.Messenger.Utils.KeyUtil;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -100,17 +94,13 @@ public class ProfileController {
                     .body(Map.of("error", "Token không hợp lệ hoặc đã hết hạn"));
         }
     }
-
-    @PostMapping("/verify")
+    @PostMapping("/verify/staff")
     public ResponseEntity<String> verifyCode(@RequestParam String code, @RequestParam String email) {
         Optional<User> userOpt = userRepository.findUserByEmail(email);
-
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy user!");
         }
-
         User user = userOpt.get();
-
         if (ADMIN_CODE.equals(code)) {
             Authority adminRole = authorityRepository.findByName("ROLE_ADMIN")
                     .orElseGet(() -> {
@@ -139,7 +129,6 @@ public class ProfileController {
             // 1️⃣ Lấy token từ header hoặc cookie
             String headerToken = request.getHeader("Authorization");
             String cookieToken = null;
-
             if (request.getCookies() != null) {
                 cookieToken = java.util.Arrays.stream(request.getCookies())
                         .filter(c -> c.getName().equals("token"))
@@ -147,19 +136,16 @@ public class ProfileController {
                         .map(c -> c.getValue())
                         .orElse(null);
             }
-
             String token = null;
             if (headerToken != null && headerToken.startsWith("Bearer ")) {
                 token = headerToken.substring(7);
             } else if (cookieToken != null) {
                 token = cookieToken;
             }
-
             if (token == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Thiếu token, vui lòng đăng nhập"));
             }
-
             // 2️⃣ Giải mã token → lấy email
             PublicKey publicKey = KeyUtil.loadOrCreateKeyPair().getPublic();
             Map<String, Object> userInfo = JwtTokenUtil.getUserFromToken(token, publicKey);

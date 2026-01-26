@@ -2,17 +2,21 @@ package com.example.Messenger.Controller;
 
 import com.example.Messenger.Entity.Product;
 import com.example.Messenger.Entity.StockImport;
-import com.example.Messenger.Record.AdjustStockRequest;
-import com.example.Messenger.Record.StockImportRequest;
+import com.example.Messenger.Record.Request.AdjustStockRequest;
+import com.example.Messenger.Record.Orther.EconomicReport;
+import com.example.Messenger.Record.Request.StockImportRequest;
 import com.example.Messenger.Repository.InventoryLogRepository;
 import com.example.Messenger.Repository.ProductRepository;
 import com.example.Messenger.Repository.StockImportRepository;
+import com.example.Messenger.Service.Implement.EconomicService;
 import com.example.Messenger.Service.Implement.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/admin/inventory")
@@ -24,12 +28,14 @@ public class InventoryAdminController {
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
     private final InventoryLogRepository inventoryLogRepository;
+    private final EconomicService economicService;
     @Autowired
-    public InventoryAdminController(StockImportRepository stockImportRepository, ProductRepository productRepository, InventoryService inventoryService, InventoryLogRepository inventoryLogRepository) {
+    public InventoryAdminController(StockImportRepository stockImportRepository, ProductRepository productRepository, InventoryService inventoryService, InventoryLogRepository inventoryLogRepository, EconomicService economicService) {
         this.stockImportRepository = stockImportRepository;
         this.productRepository = productRepository;
         this.inventoryService = inventoryService;
         this.inventoryLogRepository = inventoryLogRepository;
+        this.economicService = economicService;
     }
 
     /**
@@ -37,6 +43,16 @@ public class InventoryAdminController {
      * 1️⃣ TẠO PHIẾU NHẬP KHO
      * =========================
      */
+    @GetMapping("/economic/product/{productId}")
+    public ResponseEntity<EconomicReport> calculateProductEconomic(
+            @PathVariable String productId,
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to
+    ) {
+        EconomicReport report = economicService.calculate(productId, from, to);
+        return ResponseEntity.ok(report);
+    }
+
     @PostMapping("/stock-import")
     public ResponseEntity<?> createStockImport(
             @RequestBody StockImportRequest request

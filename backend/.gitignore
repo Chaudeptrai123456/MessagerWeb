@@ -9,7 +9,9 @@ src/main/resources/google/credentials.json
 *service-account*
 # Google credentials
 **/credentials.json
-
+/qdrant_data
+/replicas
+/Config-repo
 /models
 ### STS ###
 .apt_generated

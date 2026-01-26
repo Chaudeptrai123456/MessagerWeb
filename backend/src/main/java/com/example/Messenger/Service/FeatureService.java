@@ -2,7 +2,7 @@ package com.example.Messenger.Service;
 
 
 import com.example.Messenger.Entity.Feature;
-import com.example.Messenger.Record.FeatureRequest;
+import com.example.Messenger.Record.Request.FeatureRequest;
 
 public interface FeatureService {
     Feature addFeatureToProduct(FeatureRequest request);

@@ -2,7 +2,8 @@ package com.example.Messenger.Service.Implement;
 
 import com.example.Messenger.Entity.Authority;
 import com.example.Messenger.Entity.User;
-import com.example.Messenger.Record.UserProfile;
+import com.example.Messenger.Exception.ForbiddenException;
+import com.example.Messenger.Record.Orther.UserProfile;
 import com.example.Messenger.Repository.AuthorityRepository;
 import com.example.Messenger.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import static com.example.Messenger.Record.Type.Permission.IMPORT_STOCK;
 
 @Service
 public class UserService {
@@ -23,7 +26,17 @@ public class UserService {
         this.userRepository = userRepository;
         this.authorityRepository = authorityRepository;
     }
+    public void checkImportPermission(User user, String warehouseId) {
+        if (user.hasRole("OWNER")) return;
 
+        if (user.isManager(warehouseId)) return;
+
+        if (!user.isStaff(warehouseId))
+            throw new ForbiddenException("Not in this warehouse");
+
+        if (!user.hasPermission(warehouseId,IMPORT_STOCK))
+            throw new ForbiddenException("No permission");
+    }
     public User handleLogin(String email, String username, String avatar) {
         return userRepository.findUserByEmail(email)
                 .orElseGet(() -> {

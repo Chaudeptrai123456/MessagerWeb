@@ -3,19 +3,19 @@ package com.example.Messenger.Service.Implement;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.example.Messenger.Entity.*;
-import com.example.Messenger.Record.*;
-import com.example.Messenger.Repository.CategoryRepository;
-import com.example.Messenger.Repository.DiscountRepository;
-import com.example.Messenger.Repository.ImageRepository;
-import com.example.Messenger.Repository.ProductRepository;
-import com.example.Messenger.Service.EmbeddingService;
+import com.example.Messenger.Record.DTO.ProductStockDTO;
+import com.example.Messenger.Record.Orther.UpdateProduct;
+import com.example.Messenger.Record.Request.DiscountRequest;
+import com.example.Messenger.Record.Request.ImageRequest;
+import com.example.Messenger.Record.Request.ProductRequest;
+import com.example.Messenger.Record.Type.InventoryType;
+import com.example.Messenger.Repository.*;
 import com.example.Messenger.Service.ProductService;
 import com.example.Messenger.Service.RedisService;
 import com.example.Messenger.Utils.ProductIdUtil;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,23 +34,26 @@ public class ProductServiceImp implements ProductService {
     private static final Duration PRODUCT_TTL = Duration.ofHours(1);
     private static final Duration PRODUCT_PAGE_TTL = Duration.ofMinutes(5);
     private ProductIdUtil productIdUtil;
-
+    private final StockImportRepository stockImportRepository;
     private final RedisService redisService;
     private final DiscountRepository discountRepository;
     private final InventoryService inventoryService;
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final WarehouseStockRepository warehouseStockRepository;
     private final ImageRepository imageRepository;
     private final Cloudinary cloudinary;
 
     @Autowired
-    public ProductServiceImp(RedisService redisService, DiscountRepository discountRepository, InventoryService inventoryService, ProductRepository productRepository,
-                             CategoryRepository categoryRepository, ImageRepository imageRepository,Cloudinary cloudinary) {
+    public ProductServiceImp(StockImportRepository stockImportRepository, RedisService redisService, DiscountRepository discountRepository, InventoryService inventoryService, ProductRepository productRepository,
+                             CategoryRepository categoryRepository, WarehouseStockRepository warehouseStockRepository, ImageRepository imageRepository, Cloudinary cloudinary) {
+        this.stockImportRepository = stockImportRepository;
         this.redisService = redisService;
         this.discountRepository = discountRepository;
         this.inventoryService = inventoryService;
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.warehouseStockRepository = warehouseStockRepository;
         this.imageRepository = imageRepository;
         this.cloudinary = cloudinary;
     }
@@ -90,7 +93,7 @@ public class ProductServiceImp implements ProductService {
 
         // 5️⃣ INITIAL IMPORT (nếu có quantity)
         if (req.quantity() > 0) {
-        inventoryService.importStock(
+            inventoryService.importStock(
                 saved.getId(),
                 req.quantity(),
                 req.price(),                 // hoặc giá nhập riêng
@@ -142,6 +145,13 @@ public class ProductServiceImp implements ProductService {
         redisService.delete(cacheKey);
         var result = productRepository.save(existing);
         if (newProduct.getQuantity() != 0) {
+            inventoryService.importStock(
+                    existing.getId(),
+                    newProduct.getQuantity(),
+                    newProduct.getPrice(),                 // hoặc giá nhập riêng
+                    String.valueOf(InventoryType.ADJUST),
+                    "import",
+                    "IMPORT_" + existing.getId());      // refId (idempotent)
             inventoryService.adjustStock(
                     existing.getId(), newProduct.getQuantity(), newProduct.getReason()
             );
@@ -288,7 +298,48 @@ public class ProductServiceImp implements ProductService {
         redisService.saveList(cacheKey, new PageWrapper<>(result));
         return result;
     }
+//    @Transactional()
+//    public List<ProductStockDTO> getProductStockByWarehouse(String productId) {
+//
+//        List<WarehouseStock> stocks =
+//                warehouseStockRepository.findAllByProductId(productId);
+//
+//        if (stocks.isEmpty()) {
+//            throw new RuntimeException("No stock found for product: " + productId);
+//        }
+//
+//        return stocks.stream()
+//                .map(ws -> new ProductStockDTO(
+//                        ws.getWarehouse().getId(),
+//                        ws.getWarehouse().getName(),
+//                        ws.getQuantity()
+//                ))
+//                .toList();
+//    }
+    @Transactional()
+    public List<ProductStockDTO> getAllProductStock() {
 
+        List<WarehouseStock> stocks =
+                warehouseStockRepository.findAllWithProductAndWarehouse();
+
+        if (stocks.isEmpty()) {
+            return List.of(); // 👈 không throw nữa cho API dễ xài
+        }
+
+        return stocks.stream()
+                .map(ws -> new ProductStockDTO(
+                        ws.getProduct().getId(),
+                        ws.getProduct().getName(),
+                        ws.getWarehouse().getId(),
+                        ws.getWarehouse().getName(),
+                        ws.getQuantity()
+                ))
+                .toList();
+    }
+    @Transactional()
+    public int getTotalProductQuantity(String productId) {
+        return warehouseStockRepository.sumQuantityByProductId(productId);
+    }
     @Override
     public List<Product> getTopDiscountProducts(int limits) {
         Pageable pageable = PageRequest.of(0, limits);
